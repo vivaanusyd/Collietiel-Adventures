@@ -16,18 +16,17 @@ const label = reactionLabel(reaction);
 
 <a class="review-card" href={`/reviews/${review.slug}`}>
   <div class="review-card__media">
-    {/* Caption is the rating only. The venue NAME is an <h2> in the body
+    {
+      /* Caption is the rating only. The venue NAME is an <h2> in the body
         below instead of overlay text, so the homepage has a real heading
         outline — screen-reader users can jump card to card, and search
-        engines see structure rather than one <h1> and a wall of links. */}
-    <ImageCaption
-      src={cover}
-      alt={coverAlt ?? name}
-      mode="visible"
-      caption={stars}
-    />
-    {/* The animal badge is decorative here — its meaning is spelled out in
-        text below, so it carries no alt text and isn't announced twice. */}
+        engines see structure rather than one <h1> and a wall of links. */
+    }
+    <ImageCaption src={cover} alt={coverAlt ?? name} mode="visible" caption={stars} />
+    {
+      /* The animal badge is decorative here — its meaning is spelled out in
+        text below, so it carries no alt text and isn't announced twice. */
+    }
     <span class="reaction-badge" title={label}>
       <Icon name={reaction} size={30} />
     </span>
@@ -50,7 +49,9 @@ const label = reactionLabel(reaction);
     border-radius: var(--radius);
     overflow: hidden;
     background: #fff;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    transition:
+      transform 0.1s ease,
+      box-shadow 0.1s ease;
   }
 
   .review-card:hover {

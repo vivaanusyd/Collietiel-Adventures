@@ -13,7 +13,10 @@ export const GET: APIRoute = async ({ site }) => {
   const reviews = await getPublishedReviews();
 
   const urls = [
-    ...STATIC_PATHS.map((p) => ({ loc: new URL(p, base).href, lastmod: undefined as string | undefined })),
+    ...STATIC_PATHS.map((p) => ({
+      loc: new URL(p, base).href,
+      lastmod: undefined as string | undefined,
+    })),
     ...reviews.map((r) => ({
       loc: new URL(`/reviews/${r.slug}`, base).href,
       // Search engines use lastmod to decide whether to re-crawl — so an
@@ -24,8 +27,7 @@ export const GET: APIRoute = async ({ site }) => {
 
   const body = urls
     .map(
-      (u) =>
-        `  <url><loc>${u.loc}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}</url>`
+      (u) => `  <url><loc>${u.loc}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}</url>`
     )
     .join('\n');
 

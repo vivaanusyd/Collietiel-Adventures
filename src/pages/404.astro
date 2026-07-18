@@ -18,22 +18,26 @@ const recent = (await getPublishedReviews()).slice(0, 3);
   <h1>Not found</h1>
 
   <p class="not-found-lead">
-    There's no page at this address. It may have moved, or the link that
-    brought you here may have been wrong.
+    There's no page at this address. It may have moved, or the link that brought you here may have
+    been wrong.
   </p>
 
   <p>
     Try <a href="/">all reviews</a> or the <a href="/map">map</a>.
   </p>
 
-  {recent.length > 0 && (
-    <>
-      <h2 class="not-found-heading">Recent reviews</h2>
-      <div class="card-grid">
-        {recent.map((review) => <ReviewCard review={review} />)}
-      </div>
-    </>
-  )}
+  {
+    recent.length > 0 && (
+      <>
+        <h2 class="not-found-heading">Recent reviews</h2>
+        <div class="card-grid">
+          {recent.map((review) => (
+            <ReviewCard review={review} />
+          ))}
+        </div>
+      </>
+    )
+  }
 </BaseLayout>
 
 <style>

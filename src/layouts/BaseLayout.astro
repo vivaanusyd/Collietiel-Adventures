@@ -10,12 +10,7 @@ interface Props {
   type?: 'website' | 'article';
 }
 
-const {
-  title,
-  description = SITE.description,
-  image,
-  type = 'website',
-} = Astro.props;
+const { title, description = SITE.description, image, type = 'website' } = Astro.props;
 
 // Astro.site comes from `site:` in astro.config.mjs. Social scrapers and
 // search engines need ABSOLUTE urls — a relative "/images/x.jpg" is ignored

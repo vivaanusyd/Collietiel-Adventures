@@ -1,12 +1,23 @@
 {
   "name": "restaurant-blog",
-  "type": "module",
   "version": "0.1.0",
+  "private": true,
+  "description": "Collietiel Adventures — an Astro restaurant review blog with a Git-backed CMS for non-technical writers.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vivaanusyd/Collietiel-Adventures.git"
+  },
+  "type": "module",
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:unit": "vitest run",
+    "test": "npm run build && python3 sitetest.py dist && vitest run"
   },
   "dependencies": {
     "astro": "^4.16.0",
@@ -15,6 +26,9 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
     "@types/leaflet": "^1.9.14",
-    "typescript": "^5.6.3"
+    "prettier": "^3.3.3",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
   }
 }

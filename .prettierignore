@@ -1,0 +1,23 @@
+dist/
+.astro/
+node_modules/
+package-lock.json
+
+# The CMS config is hand-formatted YAML with alignment and comments that
+# carry meaning for whoever edits it next. Prettier's YAML output reflows
+# those into something harder to read, so it's left alone deliberately.
+public/admin/config.yml
+
+# Markdown is deliberately NOT formatted, for two reasons:
+#
+#  1. src/content/reviews/*.md is WRITERS' CONTENT. Once the CMS is in use
+#     those files are written by Sveltia, and a dev tool reformatting them
+#     produces diffs on a writer's PR that the writer didn't make and can't
+#     explain.
+#  2. The docs are hand-wrapped prose with tables. Prettier pads table cells
+#     to a common width, which is a large diff for no readability gain — and
+#     it miscounts em dashes, so the "aligned" result isn't even aligned.
+#
+# Prettier still covers everything that benefits from it: .astro, .ts, .mjs,
+# .css and .json.
+*.md

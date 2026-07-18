@@ -26,9 +26,7 @@ const SHORTCODE = /:([a-z][a-z0-9-]*):/g;
 let verified = false;
 function verifyArtworkExists() {
   if (verified) return;
-  const missing = Object.keys(EMOTIONS).filter(
-    (name) => !fs.existsSync(`${ICON_DIR}${name}.png`)
-  );
+  const missing = Object.keys(EMOTIONS).filter((name) => !fs.existsSync(`${ICON_DIR}${name}.png`));
   if (missing.length > 0) {
     throw new Error(
       `[emotion-icons] Declared in emotions.mjs but no PNG in public/icons/: ${missing.join(', ')}`

@@ -27,14 +27,7 @@ interface Props {
   aspectRatio?: string; // CSS aspect-ratio value, default "4 / 3"
 }
 
-const {
-  src,
-  alt,
-  caption,
-  mode = 'visible',
-  hotspots = [],
-  aspectRatio = '4 / 3',
-} = Astro.props;
+const { src, alt, caption, mode = 'visible', hotspots = [], aspectRatio = '4 / 3' } = Astro.props;
 
 if (mode === 'hotspots' && hotspots.length === 0) {
   console.warn(`ImageCaption: mode="hotspots" but no hotspots were passed (alt="${alt}")`);
@@ -48,23 +41,27 @@ if (mode === 'hotspots' && hotspots.length === 0) {
 >
   <img src={src} alt={alt} loading="lazy" />
 
-  {(mode === 'visible' || mode === 'hover') && caption && (
-    <figcaption class="image-caption__text">{caption}</figcaption>
-  )}
+  {
+    (mode === 'visible' || mode === 'hover') && caption && (
+      <figcaption class="image-caption__text">{caption}</figcaption>
+    )
+  }
 
-  {mode === 'hotspots' &&
-    hotspots.map((h) => (
-      <button
-        type="button"
-        class="hotspot"
-        style={`left:${h.x}%; top:${h.y}%`}
-        aria-expanded="false"
-        aria-label={h.label}
-      >
-        <span class="hotspot__dot" aria-hidden="true"></span>
-        <span class="hotspot__label">{h.label}</span>
-      </button>
-    ))}
+  {
+    mode === 'hotspots' &&
+      hotspots.map((h) => (
+        <button
+          type="button"
+          class="hotspot"
+          style={`left:${h.x}%; top:${h.y}%`}
+          aria-expanded="false"
+          aria-label={h.label}
+        >
+          <span class="hotspot__dot" aria-hidden="true" />
+          <span class="hotspot__label">{h.label}</span>
+        </button>
+      ))
+  }
 </figure>
 
 <style>
@@ -100,7 +97,9 @@ if (mode === 'hotspots' && hotspots.length === 0) {
   .image-caption--hover .image-caption__text {
     opacity: 0;
     transform: translateY(6px);
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
   }
   .image-caption--hover:hover .image-caption__text,
   .image-caption--hover.is-revealed .image-caption__text {
@@ -140,7 +139,9 @@ if (mode === 'hotspots' && hotspots.length === 0) {
     white-space: nowrap;
     opacity: 0;
     transform: translateX(-4px);
-    transition: opacity 0.12s ease, transform 0.12s ease;
+    transition:
+      opacity 0.12s ease,
+      transform 0.12s ease;
     pointer-events: none;
   }
 
