@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ImageCaption from '../../components/ImageCaption.astro';
+import Blocks from '../../components/Blocks.astro';
 import Icon from '../../components/Icon.astro';
 import { reactionLabel } from '../../lib/reactions';
 import {
@@ -39,6 +40,7 @@ const {
   author,
   draft,
   hotspots,
+  blocks,
 } = review.data;
 const { Content } = await review.render();
 
@@ -113,8 +115,14 @@ const fmt = (d: Date) =>
     }
   </p>
 
+  {
+    /* Markdown body first, then blocks. A review written by hand has only
+      the former; one written in the CMS has only the latter; both render
+      the same way and a review may use both. See src/lib/blocks.ts. */
+  }
   <article class="review-body">
     <Content />
+    {blocks && blocks.length > 0 && <Blocks blocks={blocks} />}
   </article>
 </BaseLayout>
 

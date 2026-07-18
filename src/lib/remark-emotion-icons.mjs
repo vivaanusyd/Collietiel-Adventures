@@ -1,6 +1,5 @@
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { EMOTIONS } from './emotions.mjs';
+import { availableIcons, hasIcon } from './icons.mjs';
 
 // Turns `:collie-smiling:` in review Markdown into an inline <img>.
 //
@@ -14,8 +13,6 @@ import { EMOTIONS } from './emotions.mjs';
 // TO EXTEND: add to EMOTIONS in emotions.mjs + drop the PNG in
 // public/icons/. Nothing here needs touching.
 
-const ICON_DIR = fileURLToPath(new URL('../../public/icons/', import.meta.url));
-
 // Requires a leading lowercase letter, so ordinary prose is left alone:
 // "12:30", "3:1 ratio" and "note: this" all fail to match.
 const SHORTCODE = /:([a-z][a-z0-9-]*):/g;
@@ -23,13 +20,19 @@ const SHORTCODE = /:([a-z][a-z0-9-]*):/g;
 // Verify every declared emotion actually has artwork. Runs once per build —
 // catches a map entry added without its PNG, which would otherwise ship as
 // a broken image.
+//
+// Goes through icons.mjs rather than doing its own fs check against a path
+// built here. Two copies of "where is public/icons/" was one too many: this
+// one silently resolved to the wrong folder when the plugin ran from bundled
+// build output, and then reported every icon as missing.
 let verified = false;
 function verifyArtworkExists() {
   if (verified) return;
-  const missing = Object.keys(EMOTIONS).filter((name) => !fs.existsSync(`${ICON_DIR}${name}.png`));
+  const missing = Object.keys(EMOTIONS).filter((name) => !hasIcon(name));
   if (missing.length > 0) {
     throw new Error(
-      `[emotion-icons] Declared in emotions.mjs but no PNG in public/icons/: ${missing.join(', ')}`
+      `[emotion-icons] Declared in emotions.mjs but no PNG in public/icons/: ${missing.join(', ')}\n` +
+        `  Found: ${availableIcons().join(', ')}`
     );
   }
   verified = true;

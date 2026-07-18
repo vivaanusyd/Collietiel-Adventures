@@ -24,12 +24,30 @@ export async function getPublishedReviews(): Promise<Review[]> {
 }
 
 /**
- * Rough reading time in minutes, from the raw Markdown body.
+ * Rough reading time in minutes, from every word on the page.
+ *
  * 200 wpm is the usual published estimate for general-audience prose.
- * Hand-counted rather than pulling in a remark plugin — it's four lines.
+ * Hand-counted rather than pulling in a remark plugin — it's a few lines.
+ *
+ * Counts the Markdown body AND the `blocks:` list, because a review written
+ * in the CMS has an empty body and all of its prose in blocks. Counting only
+ * the body would report "1 min read" on every CMS-authored review no matter
+ * how long it is.
  */
 export function readingTimeMinutes(review: Review): number {
-  const words = review.body.trim().split(/\s+/).filter(Boolean).length;
+  const parts = [review.body];
+
+  for (const block of review.data.blocks ?? []) {
+    // Only prose counts. Captions, alt text and dish prices are label-sized
+    // and don't change how long a page takes to read.
+    if (block.type === 'text') parts.push(block.body);
+    else if (block.type === 'quote') parts.push(block.text);
+    else if (block.type === 'dishes') {
+      parts.push(block.items.map((i) => i.note ?? '').join(' '));
+    }
+  }
+
+  const words = parts.join(' ').trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
 

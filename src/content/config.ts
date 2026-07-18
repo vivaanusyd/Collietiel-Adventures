@@ -1,5 +1,6 @@
 import { defineCollection, z } from 'astro:content';
 import { REACTION_KEYS } from '../lib/reactions';
+import { blockSchema } from '../lib/blocks';
 
 // The contract between the WRITING side and the READING side of this site.
 // Everything a review needs to be publishable is declared here, and zod
@@ -73,6 +74,17 @@ const reviews = defineCollection({
           })
         )
         .optional(),
+
+      // The review body as ORDERED BLOCKS — what the CMS block editor
+      // writes. See src/lib/blocks.ts for the vocabulary and the reasoning.
+      //
+      // Optional, and it coexists with the Markdown body below the
+      // frontmatter rather than replacing it: reviews written by hand in a
+      // text editor keep working exactly as before, and a review can use
+      // both (Markdown body first, then blocks). Making blocks the only way
+      // to write would have broken every existing file and forced anyone
+      // comfortable in Markdown through a web UI to change a typo.
+      blocks: z.array(blockSchema).optional(),
     })
     // Cross-field rules. These can't live on an individual field because
     // they depend on `draft` — which is the point: a draft is allowed to be

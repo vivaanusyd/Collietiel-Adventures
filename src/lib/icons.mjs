@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Icons live in public/icons/ rather than src/, because the Markdown
@@ -11,14 +12,45 @@ import { fileURLToPath } from 'node:url';
 // a stale icon after you overwrite one. If that ever bites, either rename
 // the file or set cache headers on /icons/* at your host.
 
-const ICON_DIR = fileURLToPath(new URL('../../public/icons/', import.meta.url));
+// Resolving this is fiddlier than it looks. This module runs in two very
+// different places:
+//
+//   1. From SOURCE, during config load and dev — where `../../public/icons/`
+//      relative to this file is correct.
+//   2. From BUNDLED BUILD OUTPUT, when a page renders Markdown at build time
+//      (src/lib/markdown.ts does this for text blocks). There, import.meta.url
+//      points inside dist/, and the relative path resolves to a folder that
+//      doesn't exist.
+//
+// Case 2 failed loudly — "no PNG in public/icons/" listing every icon that
+// plainly does exist. So try the source-relative path first and fall back to
+// the project root, and fail with a message that says where it actually
+// looked rather than asserting the files are missing.
+const ICON_DIR_CANDIDATES = [
+  fileURLToPath(new URL('../../public/icons/', import.meta.url)),
+  path.join(process.cwd(), 'public', 'icons'),
+];
+
+let iconDir = null;
+
+function getIconDir() {
+  if (iconDir === null) {
+    iconDir = ICON_DIR_CANDIDATES.find((dir) => fs.existsSync(dir));
+    if (!iconDir) {
+      throw new Error(
+        `Could not locate public/icons/. Looked in:\n  ${ICON_DIR_CANDIDATES.join('\n  ')}`
+      );
+    }
+  }
+  return iconDir;
+}
 
 let cache = null;
 
 export function availableIcons() {
   if (cache === null) {
     cache = fs
-      .readdirSync(ICON_DIR)
+      .readdirSync(getIconDir())
       .filter((f) => f.endsWith('.png'))
       .map((f) => f.slice(0, -4))
       .sort();

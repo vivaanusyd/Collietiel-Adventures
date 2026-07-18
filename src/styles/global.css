@@ -11,6 +11,15 @@
   --radius: 10px;
   --max-width: 1100px;
 
+  /* The type scale offered to writers as Small / Normal / Large / Display
+     in the block editor (src/lib/block-options.mjs). Named steps rather
+     than a font-size input: a writer picks a role, and the actual sizes
+     stay here where one edit restyles every review at once. */
+  --type-small: 0.875rem;
+  --type-normal: 1rem;
+  --type-large: 1.35rem;
+  --type-display: 2rem;
+
   /* Inline emotion icons (:collie-smiling: in review prose). Tune these two
      together: bump the size and the nudge gets slightly more negative to
      keep them sitting on the baseline. Set in em so they track font size. */

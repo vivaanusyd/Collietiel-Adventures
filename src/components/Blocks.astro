@@ -1,0 +1,301 @@
+---
+import ImageCaption from './ImageCaption.astro';
+import { renderMarkdown } from '../lib/markdown';
+import type { Block } from '../lib/blocks';
+
+// Renders the ordered `blocks:` list from a review's frontmatter — what the
+// CMS block editor produces. See src/lib/blocks.ts for the vocabulary and
+// why it's blocks rather than a freeform canvas.
+//
+// Every style choice below resolves to a class, never an inline style. That
+// is the whole point of constraining the options: the values live in
+// global.css, so restyling the site later is a stylesheet edit rather than a
+// migration across hundreds of content files.
+
+interface Props {
+  blocks: Block[];
+}
+
+const { blocks } = Astro.props;
+
+// Text blocks hold Markdown, so they go through the SAME pipeline as the
+// review body — which is what makes `:collie-smiling:` work inside a block.
+// Rendering is async, so it happens here rather than inline in the template.
+const rendered = await Promise.all(
+  blocks.map(async (block) => (block.type === 'text' ? await renderMarkdown(block.body) : null))
+);
+---
+
+<div class="blocks">
+  {
+    blocks.map((block, i) => {
+      switch (block.type) {
+        case 'text':
+          return (
+            <div
+              class:list={[
+                'block block--text',
+                `is-${block.size}`,
+                `is-${block.align}`,
+                `is-${block.emphasis}`,
+              ]}
+              set:html={rendered[i]}
+            />
+          );
+
+        case 'image':
+          return (
+            <div class:list={['block block--image', `is-${block.layout}`]}>
+              <ImageCaption
+                src={block.src}
+                alt={block.alt}
+                caption={block.caption}
+                mode={block.caption ? 'visible' : 'hover'}
+              />
+            </div>
+          );
+
+        case 'gallery':
+          return (
+            <div class:list={['block block--gallery', `is-${block.images.length}up`]}>
+              {block.images.map((img) => (
+                <ImageCaption
+                  src={img.src}
+                  alt={img.alt}
+                  caption={img.caption}
+                  mode={img.caption ? 'visible' : 'hover'}
+                  aspectRatio="1 / 1"
+                />
+              ))}
+            </div>
+          );
+
+        case 'annotated':
+          return (
+            <div class="block block--annotated">
+              <ImageCaption
+                src={block.src}
+                alt={block.alt}
+                mode="hotspots"
+                hotspots={block.hotspots}
+              />
+              {block.caption && <p class="block__caption">{block.caption}</p>}
+            </div>
+          );
+
+        case 'quote':
+          return (
+            <blockquote class:list={['block block--quote', `is-${block.align}`]}>
+              <p>{block.text}</p>
+              {block.attribution && <cite>{block.attribution}</cite>}
+            </blockquote>
+          );
+
+        case 'dishes':
+          return (
+            <div class="block block--dishes">
+              <ul>
+                {block.items.map((item) => (
+                  <li class="dish">
+                    <div class="dish__head">
+                      <span class="dish__name">{item.name}</span>
+                      {item.price && <span class="dish__price">{item.price}</span>}
+                    </div>
+                    {item.note && <p class="dish__note">{item.note}</p>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+      }
+    })
+  }
+</div>
+
+<style>
+  .blocks {
+    margin-top: 1.5rem;
+  }
+
+  .block {
+    margin: 1.5rem 0;
+  }
+
+  /* --- text ------------------------------------------------------------ */
+  /* Sizes map to the shared type scale in global.css rather than literal
+     rem values, so changing the scale changes every review at once. */
+  .block--text.is-small {
+    font-size: var(--type-small);
+  }
+  .block--text.is-normal {
+    font-size: var(--type-normal);
+  }
+  .block--text.is-large {
+    font-size: var(--type-large);
+  }
+  .block--text.is-display {
+    font-size: var(--type-display);
+    line-height: 1.2;
+  }
+
+  .block--text.is-center {
+    text-align: center;
+  }
+
+  /* Emphasis names a palette slot, never a literal colour. */
+  .block--text.is-accent {
+    color: var(--color-accent);
+  }
+  .block--text.is-muted {
+    color: var(--color-muted);
+  }
+
+  /* --- image ----------------------------------------------------------- */
+  /* The review column is 65ch. `wide` and `full` deliberately break out of
+     it using negative margins that bottom out at the viewport, so a
+     full-bleed photo never causes a horizontal scrollbar on a phone. */
+  .block--image.is-normal {
+    max-width: 100%;
+  }
+
+  .block--image.is-inset {
+    max-width: 60%;
+    margin-inline: auto;
+  }
+
+  .block--image.is-wide {
+    width: min(100vw - 3rem, 900px);
+    margin-inline: calc(50% - min(50vw - 1.5rem, 450px));
+  }
+
+  .block--image.is-full {
+    width: calc(100vw - 3rem);
+    margin-inline: calc(50% - (100vw - 3rem) / 2);
+  }
+
+  /* Floated images wrap text. They drop to full width on narrow screens —
+     a 45% float in a phone column leaves both the image and the text too
+     narrow to read. */
+  .block--image.is-left,
+  .block--image.is-right {
+    width: 45%;
+    margin-block: 0.4rem;
+  }
+
+  .block--image.is-left {
+    float: left;
+    margin-right: 1.2rem;
+  }
+
+  .block--image.is-right {
+    float: right;
+    margin-left: 1.2rem;
+  }
+
+  /* --- gallery --------------------------------------------------------- */
+  .block--gallery {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .block--gallery.is-2up {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .block--gallery.is-3up {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* --- annotated ------------------------------------------------------- */
+  .block__caption {
+    margin: 0.4rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+  }
+
+  /* --- quote ----------------------------------------------------------- */
+  .block--quote {
+    margin-inline: 0;
+    padding-left: 1rem;
+    border-left: 3px solid var(--color-accent);
+    font-size: var(--type-large);
+    line-height: 1.35;
+  }
+
+  .block--quote.is-center {
+    text-align: center;
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .block--quote p {
+    margin: 0;
+  }
+
+  .block--quote cite {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: var(--type-small);
+    font-style: normal;
+    color: var(--color-muted);
+  }
+
+  /* --- dishes ---------------------------------------------------------- */
+  .block--dishes ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .dish {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dish__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: baseline;
+  }
+
+  .dish__name {
+    font-weight: 600;
+  }
+
+  .dish__price {
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .dish__note {
+    margin: 0.2rem 0 0;
+    font-size: var(--type-small);
+    color: var(--color-muted);
+  }
+
+  /* Floats must not escape the block flow into the next section. */
+  .blocks::after {
+    content: '';
+    display: table;
+    clear: both;
+  }
+
+  @media (max-width: 640px) {
+    .block--image.is-left,
+    .block--image.is-right,
+    .block--image.is-inset {
+      float: none;
+      width: 100%;
+      max-width: 100%;
+      margin-inline: 0;
+    }
+
+    /* Three across is unreadable at phone width; stack to two. */
+    .block--gallery.is-3up {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>
