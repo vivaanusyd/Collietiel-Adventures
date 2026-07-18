@@ -1,0 +1,27 @@
+---
+// Renders any PNG in public/icons/ by filename — see public/icons/README.md.
+// Resolution + the build-time existence check live in src/lib/icons.mjs,
+// shared with the Markdown shortcode plugin so both fail the same way.
+//
+// For emotion icons inside review prose, don't use this component — write
+// `:collie-smiling:` in the Markdown instead.
+import { iconPath } from '../lib/icons.mjs';
+
+interface Props {
+  name: string;
+  size?: number;
+  alt?: string;
+}
+
+const { name, size = 32, alt = '' } = Astro.props;
+const src = iconPath(name); // throws with the valid list if the name is wrong
+---
+
+<img class="icon" src={src} width={size} height={size} alt={alt} />
+
+<style>
+  .icon {
+    display: inline-block;
+    vertical-align: middle;
+  }
+</style>

@@ -1,0 +1,46 @@
+---
+// Astro's static build emits this as dist/404.html. Netlify and Vercel both
+// pick that filename up automatically for unmatched routes — no config, no
+// redirect rule.
+//
+// Offers the three most recent reviews rather than a bare apology: the most
+// common way to land here is a link that rotted or a slug typed by hand, and
+// in both cases the reader wanted *a* review, not that one specifically.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ReviewCard from '../components/ReviewCard.astro';
+import { getPublishedReviews } from '../lib/reviews';
+
+const recent = (await getPublishedReviews()).slice(0, 3);
+---
+
+<BaseLayout title="Not found — The Blog" description="That page doesn't exist.">
+  <h1>Not found</h1>
+
+  <p class="not-found-lead">
+    There's no page at this address. It may have moved, or the link that
+    brought you here may have been wrong.
+  </p>
+
+  <p>
+    Try <a href="/">all reviews</a> or the <a href="/map">map</a>.
+  </p>
+
+  {recent.length > 0 && (
+    <>
+      <h2 class="not-found-heading">Recent reviews</h2>
+      <div class="card-grid">
+        {recent.map((review) => <ReviewCard review={review} />)}
+      </div>
+    </>
+  )}
+</BaseLayout>
+
+<style>
+  .not-found-lead {
+    max-width: 55ch;
+  }
+
+  .not-found-heading {
+    margin-top: 2.5rem;
+  }
+</style>

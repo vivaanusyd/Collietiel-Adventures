@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ReviewCard from '../components/ReviewCard.astro';
+import { getPublishedReviews } from '../lib/reviews';
+
+const reviews = await getPublishedReviews();
+const draftCount = reviews.filter((r) => r.data.draft).length;
+---
+
+<BaseLayout title="The Blog — restaurant reviews" description="A small restaurant review blog.">
+  <h1>Reviews</h1>
+
+  {/* Dev-only editor's note. import.meta.env.DEV is false in a production
+      build, so this whole block disappears from the shipped HTML. */}
+  {import.meta.env.DEV && draftCount > 0 && (
+    <p class="editor-note">
+      <strong>Editing:</strong> {draftCount} draft{draftCount === 1 ? '' : 's'} shown
+      below. Drafts are stripped from <code>npm run build</code> and cannot reach
+      the live site.
+    </p>
+  )}
+
+  <div class="card-grid">
+    {reviews.map((review) => <ReviewCard review={review} />)}
+  </div>
+</BaseLayout>

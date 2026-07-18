@@ -1,0 +1,156 @@
+/* All site-wide styles live here. Component-specific styles (that only
+   ever apply inside one component) live scoped inside that .astro file
+   instead — this file is for layout, typography, and shared utilities. */
+
+:root {
+  --color-bg: #faf7f2;
+  --color-text: #221e1a;
+  --color-muted: #6b6258;
+  --color-accent: #c2452c;
+  --color-border: #e5ddd0;
+  --radius: 10px;
+  --max-width: 1100px;
+
+  /* Inline emotion icons (:collie-smiling: in review prose). Tune these two
+     together: bump the size and the nudge gets slightly more negative to
+     keep them sitting on the baseline. Set in em so they track font size. */
+  --emotion-icon-size: 1.35em;
+  --emotion-icon-nudge: -0.3em;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Site nav, used by BaseLayout */
+.site-nav {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.site-nav .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.site-nav .brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.site-nav .links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.site-nav .links a {
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.site-nav .links a:hover {
+  color: var(--color-accent);
+}
+
+.site-main {
+  padding: 2rem 0 4rem;
+}
+
+/* Homepage / general card grid */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.rating {
+  color: var(--color-accent);
+  letter-spacing: 1px;
+  font-size: 1.3rem;
+  margin: 0.3rem 0;
+}
+
+/* Visible only once focused — keyboard users get to jump the nav, mouse
+   users never see it. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--color-accent);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  z-index: 1000;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* Inline emotion icons injected into review prose by the `:name:`
+   shortcode (src/lib/remark-emotion-icons.mjs).
+   Sized in `em` so they scale with whatever text they sit in, and nudged
+   down with vertical-align so they sit ON the baseline rather than hanging
+   off it. `display:inline` (not inline-block) keeps them from stretching
+   the line box, so a paragraph containing icons keeps even line spacing. */
+.emotion-icon {
+  display: inline;
+  height: var(--emotion-icon-size);
+  width: auto;
+  vertical-align: var(--emotion-icon-nudge);
+  margin: 0 0.06em;
+}
+
+/* Dev-only editorial callout — see index.astro. */
+.editor-note {
+  background: #fff8e6;
+  border-left: 4px solid #d09a1e;
+  padding: 0.6rem 0.9rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  padding: 1.5rem 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.site-footer p {
+  margin: 0;
+}

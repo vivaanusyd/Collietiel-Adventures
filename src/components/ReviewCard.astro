@@ -1,0 +1,112 @@
+---
+import ImageCaption from './ImageCaption.astro';
+import Icon from './Icon.astro';
+import { reactionLabel } from '../lib/reactions';
+import { starString, type Review } from '../lib/reviews';
+
+interface Props {
+  review: Review;
+}
+
+const { review } = Astro.props;
+const { name, rating, cover, coverAlt, blurb, cuisine, reaction, draft } = review.data;
+const stars = starString(rating);
+const label = reactionLabel(reaction);
+---
+
+<a class="review-card" href={`/reviews/${review.slug}`}>
+  <div class="review-card__media">
+    <ImageCaption
+      src={cover}
+      alt={coverAlt ?? name}
+      mode="visible"
+      caption={`${name} · ${stars}`}
+    />
+    {/* The animal badge is decorative here — its meaning is spelled out in
+        text below, so it carries no alt text and isn't announced twice. */}
+    <span class="reaction-badge" title={label}>
+      <Icon name={reaction} size={30} />
+    </span>
+    {draft && <span class="draft-flag">Draft</span>}
+  </div>
+  <div class="review-card__body">
+    {cuisine && <span class="review-card__cuisine">{cuisine}</span>}
+    <p class="review-card__blurb">{blurb}</p>
+    <p class="review-card__reaction">{label}</p>
+  </div>
+</a>
+
+<style>
+  .review-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #fff;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .review-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .review-card__media {
+    position: relative;
+  }
+
+  .reaction-badge {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Only ever rendered in dev — drafts are stripped from prod builds. */
+  .draft-flag {
+    position: absolute;
+    top: 0.6rem;
+    left: 0.6rem;
+    background: #b3261e;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .review-card__body {
+    padding: 0.8rem 0.9rem 1rem;
+  }
+
+  .review-card__cuisine {
+    display: inline-block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-muted);
+    margin-bottom: 0.3rem;
+  }
+
+  .review-card__blurb {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .review-card__reaction {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: var(--color-muted);
+    font-style: italic;
+  }
+</style>

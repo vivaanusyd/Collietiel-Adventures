@@ -1,0 +1,29 @@
+# Netlify build config, kept in the repo rather than only in Netlify's
+# dashboard — so the build is reproducible and you can see what it does
+# without logging in.
+#
+# Netlify would auto-detect most of this for an Astro project. The one thing
+# genuinely worth pinning is NODE_VERSION: hosts move their default Node
+# forward on their own schedule, and a build that worked last month failing
+# for no visible reason is almost always that.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# dist/404.html is picked up automatically for unmatched routes — no redirect
+# rule needed. See src/pages/404.astro.
+
+# NOT setting long cache headers on /icons/* and /images/* on purpose.
+# Files in public/ aren't content-hashed, so an aggressive max-age means
+# overwriting an icon leaves readers on the old art until their cache
+# expires. Once the art is final and you've stopped iterating, adding
+# something like this is worth it:
+#
+# [[headers]]
+#   for = "/icons/*"
+#   [headers.values]
+#     Cache-Control = "public, max-age=604800"

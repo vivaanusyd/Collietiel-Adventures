@@ -1,0 +1,150 @@
+---
+// Leaflet needs a real DOM + `window`, so the actual map only exists in the
+// client-side script tag further down this file. This top section's only
+// job is to fetch every review from the content collection and hand it to
+// that script as JSON — that's the whole mechanism behind "new review =
+// new pin", nothing else to wire up.
+import { getPublishedReviews, starString } from '../lib/reviews';
+
+// Goes through the shared helper, not getCollection — so drafts are hidden
+// here on exactly the same terms as everywhere else. See src/lib/reviews.ts.
+const reviews = await getPublishedReviews();
+const pins = reviews.map((r) => ({
+  slug: r.slug,
+  name: r.data.name,
+  lat: r.data.lat,
+  lng: r.data.lng,
+  stars: starString(r.data.rating),
+  cover: r.data.cover,
+  blurb: r.data.blurb,
+}));
+---
+
+<div id="map" class="review-map"></div>
+<script type="application/json" id="review-pins" set:html={JSON.stringify(pins)} is:inline />
+
+<style>
+  .review-map {
+    width: 100%;
+    height: 70vh;
+    min-height: 420px;
+    border-radius: var(--radius, 10px);
+    overflow: hidden;
+    background: var(--color-border, #e5ddd0);
+  }
+</style>
+
+<script>
+  import 'leaflet/dist/leaflet.css';
+  import L from 'leaflet';
+  import markerIcon from 'leaflet/dist/images/marker-icon.png';
+  import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+  import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+  // Leaflet's default marker icon looks for images relative to its CSS
+  // file, which breaks once a bundler (Vite/Astro included) hashes and
+  // moves asset filenames. Two fixes needed together:
+  //  1. `delete _getIconUrl` — Icon.Default's version unconditionally
+  //     prepends an auto-detected `imagePath`, even to an already-absolute
+  //     URL, mangling it. Deleting it falls back to the base Icon class's
+  //     lookup, which just uses the URL as given.
+  //  2. `.src` — Astro's asset pipeline resolves .png imports to a
+  //     metadata object ({ src, width, height, ... }), not a plain string.
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconUrl: markerIcon.src,
+    iconRetinaUrl: markerIcon2x.src,
+    shadowUrl: markerShadow.src,
+  });
+
+  interface Pin {
+    slug: string;
+    name: string;
+    lat: number;
+    lng: number;
+    stars: string;
+    cover: string;
+    blurb: string;
+  }
+
+  const dataEl = document.getElementById('review-pins');
+  const pins: Pin[] = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
+  const mapEl = document.getElementById('map');
+
+  if (mapEl && pins.length > 0) {
+    const map = L.map(mapEl).setView([pins[0].lat, pins[0].lng], 12);
+
+    // OpenStreetMap's own tile server — free, no API key. Fine for a small
+    // personal blog; if traffic ever grows, OSM's usage policy asks heavier
+    // sites to switch to a paid tile provider (e.g. MapTiler, Stadia) —
+    // that's a one-line change to this URL, nothing else in the app cares.
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    for (const pin of pins) {
+      const popup = document.createElement('div');
+      popup.className = 'map-popup';
+
+      const img = document.createElement('img');
+      img.src = pin.cover;
+      img.alt = pin.name;
+
+      const title = document.createElement('strong');
+      title.textContent = pin.name;
+
+      const stars = document.createElement('span');
+      stars.className = 'map-popup__stars';
+      stars.textContent = pin.stars;
+
+      const blurb = document.createElement('p');
+      blurb.textContent = pin.blurb;
+
+      const link = document.createElement('a');
+      link.href = `/reviews/${pin.slug}`;
+      link.textContent = 'Read full review →';
+
+      popup.append(img, title, stars, blurb, link);
+
+      L.marker([pin.lat, pin.lng]).addTo(map).bindPopup(popup);
+    }
+
+    if (pins.length > 1) {
+      const bounds = L.latLngBounds(pins.map((p) => [p.lat, p.lng] as [number, number]));
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  } else if (mapEl) {
+    mapEl.textContent = 'No reviews yet — add one in src/content/reviews/ to see it here.';
+  }
+</script>
+
+<style is:global>
+  /* Leaflet popup content — global because Leaflet renders it outside
+     this component's scoped-style boundary. */
+  .map-popup {
+    width: 200px;
+  }
+  .map-popup img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 0.4rem;
+  }
+  .map-popup__stars {
+    display: block;
+    color: var(--color-accent, #c2452c);
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+    margin-top: 0.15rem;
+  }
+  .map-popup p {
+    margin: 0.3rem 0;
+    font-size: 0.85rem;
+  }
+  .map-popup a {
+    font-size: 0.85rem;
+  }
+</style>

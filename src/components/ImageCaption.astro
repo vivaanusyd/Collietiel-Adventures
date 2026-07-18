@@ -1,0 +1,177 @@
+---
+// Reusable "text over photo" component with three interaction modes.
+// Usage:
+//   <ImageCaption src="/x.jpg" alt="..." caption="..." />                    (mode="visible", default)
+//   <ImageCaption src="/x.jpg" alt="..." caption="..." mode="hover" />
+//   <ImageCaption src="/x.jpg" alt="..." mode="hotspots"
+//     hotspots={[{ x: 30, y: 60, label: "Galbi" }, { x: 70, y: 20, label: "Banchan" }]} />
+//
+// To add a fourth mode later: add the value to the Mode union, add a
+// `.image-caption--yourmode` CSS block below, and (if it needs interaction)
+// a branch in the shared click-delegation script at the bottom of this file.
+
+export interface Hotspot {
+  x: number; // percentage from left, 0-100
+  y: number; // percentage from top, 0-100
+  label: string;
+}
+
+export type CaptionMode = 'visible' | 'hover' | 'hotspots';
+
+interface Props {
+  src: string;
+  alt: string;
+  caption?: string;
+  mode?: CaptionMode;
+  hotspots?: Hotspot[];
+  aspectRatio?: string; // CSS aspect-ratio value, default "4 / 3"
+}
+
+const {
+  src,
+  alt,
+  caption,
+  mode = 'visible',
+  hotspots = [],
+  aspectRatio = '4 / 3',
+} = Astro.props;
+
+if (mode === 'hotspots' && hotspots.length === 0) {
+  console.warn(`ImageCaption: mode="hotspots" but no hotspots were passed (alt="${alt}")`);
+}
+---
+
+<figure
+  class={`image-caption image-caption--${mode}`}
+  data-caption-mode={mode}
+  style={`--ic-aspect-ratio: ${aspectRatio}`}
+>
+  <img src={src} alt={alt} loading="lazy" />
+
+  {(mode === 'visible' || mode === 'hover') && caption && (
+    <figcaption class="image-caption__text">{caption}</figcaption>
+  )}
+
+  {mode === 'hotspots' &&
+    hotspots.map((h) => (
+      <button
+        type="button"
+        class="hotspot"
+        style={`left:${h.x}%; top:${h.y}%`}
+        aria-expanded="false"
+        aria-label={h.label}
+      >
+        <span class="hotspot__dot" aria-hidden="true"></span>
+        <span class="hotspot__label">{h.label}</span>
+      </button>
+    ))}
+</figure>
+
+<style>
+  .image-caption {
+    position: relative;
+    margin: 0;
+    aspect-ratio: var(--ic-aspect-ratio);
+    overflow: hidden;
+    border-radius: var(--radius, 10px);
+  }
+
+  .image-caption img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* --- visible / hover share the same bottom-gradient caption bar --- */
+  .image-caption__text {
+    position: absolute;
+    inset: auto 0 0 0;
+    margin: 0;
+    padding: 1.5rem 0.9rem 0.7rem;
+    color: #fff;
+    font-size: 0.95rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+  }
+
+  /* mode="visible": caption always shown — no extra rules needed. */
+
+  /* mode="hover": hidden until :hover (desktop) or tap, via .is-revealed
+     toggled by the shared script below. */
+  .image-caption--hover .image-caption__text {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .image-caption--hover:hover .image-caption__text,
+  .image-caption--hover.is-revealed .image-caption__text {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* --- mode="hotspots" --- */
+  .hotspot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .hotspot__dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-accent, #c2452c);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
+  }
+
+  .hotspot__label {
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    pointer-events: none;
+  }
+
+  .hotspot[aria-expanded='true'] .hotspot__label {
+    opacity: 1;
+    transform: translateX(0);
+  }
+</style>
+
+<script>
+  // Handles the two interactive modes (hover-tap, hotspots) for every
+  // ImageCaption on the page via one delegated listener. Astro dedupes
+  // this script to a single copy even though the component renders many
+  // times on the homepage grid.
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+
+    const hoverFigure = target.closest<HTMLElement>('[data-caption-mode="hover"]');
+    if (hoverFigure) {
+      hoverFigure.classList.toggle('is-revealed');
+    }
+
+    const hotspot = target.closest<HTMLButtonElement>('.hotspot');
+    if (hotspot) {
+      const wasOpen = hotspot.getAttribute('aria-expanded') === 'true';
+      // Close any other open hotspot in the same figure first.
+      hotspot
+        .closest('.image-caption--hotspots')
+        ?.querySelectorAll('.hotspot')
+        .forEach((h) => h.setAttribute('aria-expanded', 'false'));
+      hotspot.setAttribute('aria-expanded', String(!wasOpen));
+    }
+  });
+</script>

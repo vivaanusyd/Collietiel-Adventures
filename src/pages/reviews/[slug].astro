@@ -1,0 +1,117 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ImageCaption from '../../components/ImageCaption.astro';
+import Icon from '../../components/Icon.astro';
+import { reactionLabel } from '../../lib/reactions';
+import { getPublishedReviews, readingTimeMinutes, starString, type Review } from '../../lib/reviews';
+
+export async function getStaticPaths() {
+  // Same helper as everywhere else, so a draft gets a previewable page in
+  // dev but no page at all in a production build.
+  const reviews = await getPublishedReviews();
+  return reviews.map((review) => ({
+    params: { slug: review.slug },
+    props: { review },
+  }));
+}
+
+interface Props {
+  review: Review;
+}
+
+const { review } = Astro.props;
+const { name, rating, date, updated, cover, coverAlt, cuisine, address, reaction, author, draft, hotspots } =
+  review.data;
+const { Content } = await review.render();
+
+const stars = starString(rating);
+const minutes = readingTimeMinutes(review);
+const label = reactionLabel(reaction);
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<BaseLayout
+  title={`${name} — The Blog`}
+  description={review.data.blurb}
+  image={cover}
+  type="article"
+>
+  <a href="/">&larr; All reviews</a>
+
+  {draft && (
+    <p class="draft-banner">
+      <strong>Draft.</strong> Not included in production builds.
+    </p>
+  )}
+
+  {/* Hotspots are opt-in per review (frontmatter). No `hotspots:` key means
+      a plain captioned cover — the right default, and the reason this page
+      can't ship placeholder pins the way it used to. */}
+  <ImageCaption
+    src={cover}
+    alt={coverAlt ?? name}
+    mode={hotspots && hotspots.length > 0 ? 'hotspots' : 'visible'}
+    hotspots={hotspots ?? []}
+  />
+
+  <h1>{name}</h1>
+
+  <p class="rating" aria-label={`Rated ${rating} out of 5`}>
+    <span aria-hidden="true">{stars}</span>
+  </p>
+
+  <p class="review-reaction">
+    <Icon name={reaction} size={28} />
+    <span>{label}</span>
+  </p>
+
+  <p class="review-meta">
+    {cuisine && <span>{cuisine} · </span>}
+    {address && <span>{address} · </span>}
+    <span>{minutes} min read</span>
+  </p>
+
+  <p class="review-byline">
+    By {author} · Published <time datetime={date.toISOString()}>{fmt(date)}</time>
+    {updated && (
+      <> · Updated <time datetime={updated.toISOString()}>{fmt(updated)}</time></>
+    )}
+  </p>
+
+  <article class="review-body">
+    <Content />
+  </article>
+</BaseLayout>
+
+<style>
+  .review-reaction {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-style: italic;
+    color: var(--color-muted);
+    margin: 0.4rem 0;
+  }
+
+  .review-meta,
+  .review-byline {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    margin: 0.3rem 0;
+  }
+
+  .draft-banner {
+    background: #fdecea;
+    border-left: 4px solid #b3261e;
+    padding: 0.6rem 0.9rem;
+    border-radius: 4px;
+  }
+
+  .review-body {
+    max-width: 65ch;
+    line-height: 1.7;
+    margin-top: 1.5rem;
+  }
+</style>

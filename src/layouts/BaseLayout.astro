@@ -1,0 +1,90 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Social preview image, as a site-root path e.g. "/images/reviews/x.jpg". */
+  image?: string;
+  type?: 'website' | 'article';
+}
+
+const {
+  title,
+  description = 'A small restaurant review blog.',
+  image,
+  type = 'website',
+} = Astro.props;
+
+// Astro.site comes from `site:` in astro.config.mjs. Social scrapers and
+// search engines need ABSOLUTE urls — a relative "/images/x.jpg" is ignored
+// by most of them. Until you set a real domain in the config, these resolve
+// against example.com and previews won't work.
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.pathname;
+const ogImage = image && Astro.site ? new URL(image, Astro.site).href : undefined;
+---
+
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- SVG favicon, which every current browser supports and which stays
+         sharp at any size. Older browsers just show nothing rather than
+         breaking — an .ico fallback is only worth adding if your analytics
+         later show real traffic from one. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#c2452c" />
+
+    <!-- Open Graph / Twitter: controls the card people see when a review is
+         pasted into a message, Slack, or social. Without these you get a
+         bare grey link. -->
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
+
+    <!-- Lets browsers and feed readers auto-discover the RSS feed. -->
+    <link rel="alternate" type="application/rss+xml" title="The Blog" href="/rss.xml" />
+
+    <!--
+      ANALYTICS SLOT — intentionally empty. Paste your provider's snippet
+      here, and read ANALYTICS.md first: some options legally require a
+      consent banner in some countries, others don't. Leaving this empty
+      means the site sets no cookies and collects nothing.
+    -->
+  </head>
+  <body>
+    <!-- Keyboard users land here first; lets them jump the nav. -->
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <nav class="site-nav">
+      <div class="container">
+        <a class="brand" href="/">🍽️ The Blog</a>
+        <div class="links">
+          <a href="/">Home</a>
+          <a href="/map">Map</a>
+          <a href="/rss.xml">RSS</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="site-main" id="main">
+      <div class="container">
+        <slot />
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>Written by hand. No trackers, no comments, no accounts.</p>
+      </div>
+    </footer>
+  </body>
+</html>
