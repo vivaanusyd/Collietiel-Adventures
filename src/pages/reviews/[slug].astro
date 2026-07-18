@@ -46,11 +46,16 @@ const stars = starString(rating);
 const minutes = readingTimeMinutes(review);
 const label = reactionLabel(reaction);
 
+// A draft may not have a blurb yet, and an empty string would emit an empty
+// <meta description> rather than falling back. Published reviews always have
+// one — the schema enforces it at publish time, not write time.
+const metaDescription = review.data.blurb || undefined;
+
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
 
-<BaseLayout title={pageTitle(name)} description={review.data.blurb} image={cover} type="article">
+<BaseLayout title={pageTitle(name)} description={metaDescription} image={cover} type="article">
   <a href="/">&larr; All reviews</a>
 
   {
@@ -62,16 +67,22 @@ const fmt = (d: Date) =>
   }
 
   {
-    /* Hotspots are opt-in per review (frontmatter). No `hotspots:` key means
-      a plain captioned cover — the right default, and the reason this page
-      can't ship placeholder pins the way it used to. */
+    /* Cover is optional — a review without a photo just opens on its
+      heading. Hotspots are opt-in on top of that (frontmatter); no
+      `hotspots:` key means a plain captioned cover, which is the right
+      default and the reason this page can't ship placeholder pins the way
+      it used to. */
   }
-  <ImageCaption
-    src={cover}
-    alt={coverAlt ?? name}
-    mode={hotspots && hotspots.length > 0 ? 'hotspots' : 'visible'}
-    hotspots={hotspots ?? []}
-  />
+  {
+    cover && (
+      <ImageCaption
+        src={cover}
+        alt={coverAlt ?? name}
+        mode={hotspots && hotspots.length > 0 ? 'hotspots' : 'visible'}
+        hotspots={hotspots ?? []}
+      />
+    )
+  }
 
   <h1>{name}</h1>
 

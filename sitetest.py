@@ -219,8 +219,17 @@ else:
                 warn("rss", "no <lastBuildDate>")
             items = ch.findall("item")
             note("rss items: %d" % len(items))
-            if not items:
-                fail("rss", "feed has no items")
+            # An empty feed is only a bug if there was something to put in
+            # it. A site whose reviews are all still drafts SHOULD publish a
+            # feed with no items — that's valid RSS and the honest answer.
+            # Comparing against the built review pages makes this catch the
+            # case that actually matters: pages exist but the feed missed
+            # them, which is a real regression in getPublishedReviews().
+            review_pages = [p for p in pages if p.startswith("/reviews/")]
+            if not items and review_pages:
+                fail("rss", "%d review page(s) built but the feed has no items" % len(review_pages))
+            elif not items:
+                note("feed is empty because no review is published yet — expected")
             for it in items:
                 t = it.find("title")
                 l = it.find("link")

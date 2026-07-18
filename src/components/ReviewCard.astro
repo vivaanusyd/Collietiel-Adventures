@@ -22,7 +22,21 @@ const label = reactionLabel(reaction);
         outline — screen-reader users can jump card to card, and search
         engines see structure rather than one <h1> and a wall of links. */
     }
-    <ImageCaption src={cover} alt={coverAlt ?? name} mode="visible" caption={stars} />
+    {
+      /* No cover photo is a legitimate state — see `cover` in
+        src/content/config.ts. The fallback keeps the card's shape (so the
+        grid doesn't go ragged) and still shows the rating, rather than
+        rendering a broken image or a stock photo of food nobody served. */
+    }
+    {
+      cover ? (
+        <ImageCaption src={cover} alt={coverAlt ?? name} mode="visible" caption={stars} />
+      ) : (
+        <div class="review-card__nocover">
+          <span class="review-card__nocover-stars">{stars}</span>
+        </div>
+      )
+    }
     {
       /* The animal badge is decorative here — its meaning is spelled out in
         text below, so it carries no alt text and isn't announced twice. */
@@ -61,6 +75,23 @@ const label = reactionLabel(reaction);
 
   .review-card__media {
     position: relative;
+  }
+
+  /* Shown instead of the cover when a review has no photo yet. Matches the
+     4/3 aspect ratio ImageCaption uses, so a mixed grid of with- and
+     without-photo cards still lines up. */
+  .review-card__nocover {
+    aspect-ratio: 4 / 3;
+    display: grid;
+    place-items: center;
+    background: var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  .review-card__nocover-stars {
+    color: var(--color-accent);
+    letter-spacing: 2px;
+    font-size: 1.2rem;
   }
 
   .reaction-badge {
