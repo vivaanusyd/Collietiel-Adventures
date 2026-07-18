@@ -13,6 +13,7 @@ import {
   type Review,
 } from '../../lib/reviews';
 import { pageTitle } from '../../lib/site';
+import { imageUrl } from '../../lib/images.mjs';
 
 export async function getStaticPaths() {
   // Same helper as everywhere else, so a draft gets a previewable page in
@@ -59,13 +60,22 @@ const metaDescription = review.data.blurb || undefined;
 // to resolve "/reviews/x" against. Falls back to the path when `site:` isn't
 // set, which only happens in a misconfigured build.
 const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.pathname;
-const coverUrl = cover && Astro.site ? new URL(cover, Astro.site).href : undefined;
+// Social scrapers fetch this directly, so it points at an optimised copy —
+// otherwise pasting a link into a chat pulls the full-resolution original.
+// 1200px is what the major platforms render a large card at.
+const ogImagePath = cover ? imageUrl(cover, 1200) : undefined;
+const coverUrl = ogImagePath && Astro.site ? new URL(ogImagePath, Astro.site).href : undefined;
 
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
 
-<BaseLayout title={pageTitle(name)} description={metaDescription} image={cover} type="article">
+<BaseLayout
+  title={pageTitle(name)}
+  description={metaDescription}
+  image={ogImagePath}
+  type="article"
+>
   <ReviewSchema slot="head" review={review} url={canonicalUrl} imageUrl={coverUrl} />
 
   <a href="/">&larr; All reviews</a>
@@ -92,6 +102,8 @@ const fmt = (d: Date) =>
         alt={coverAlt ?? name}
         mode={hotspots && hotspots.length > 0 ? 'hotspots' : 'visible'}
         hotspots={hotspots ?? []}
+        sizes="(max-width: 700px) 100vw, 700px"
+        priority
       />
     )
   }

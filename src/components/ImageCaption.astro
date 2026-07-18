@@ -16,6 +16,8 @@ export interface Hotspot {
   label: string;
 }
 
+import Picture from './Picture.astro';
+
 export type CaptionMode = 'visible' | 'hover' | 'hotspots';
 
 interface Props {
@@ -25,9 +27,23 @@ interface Props {
   mode?: CaptionMode;
   hotspots?: Hotspot[];
   aspectRatio?: string; // CSS aspect-ratio value, default "4 / 3"
+  /** How wide this renders, for the browser's srcset choice. */
+  sizes?: string;
+  /** Set on the one image above the fold — loads it eagerly, at high
+      priority. Everything else stays lazy. */
+  priority?: boolean;
 }
 
-const { src, alt, caption, mode = 'visible', hotspots = [], aspectRatio = '4 / 3' } = Astro.props;
+const {
+  src,
+  alt,
+  caption,
+  mode = 'visible',
+  hotspots = [],
+  aspectRatio = '4 / 3',
+  sizes = '(max-width: 700px) 100vw, 700px',
+  priority = false,
+} = Astro.props;
 
 if (mode === 'hotspots' && hotspots.length === 0) {
   console.warn(`ImageCaption: mode="hotspots" but no hotspots were passed (alt="${alt}")`);
@@ -39,7 +55,19 @@ if (mode === 'hotspots' && hotspots.length === 0) {
   data-caption-mode={mode}
   style={`--ic-aspect-ratio: ${aspectRatio}`}
 >
-  <img src={src} alt={alt} loading="lazy" />
+  {
+    /* Responsive variants via Picture; `sizes` reflects that this figure is
+      as wide as the review column, or the full viewport on a phone. The
+      cover on a review page is the largest thing above the fold, so it opts
+      out of lazy-loading and asks to be fetched early. */
+  }
+  <Picture
+    src={src}
+    alt={alt}
+    sizes={sizes}
+    loading={priority ? 'eager' : 'lazy'}
+    fetchpriority={priority ? 'high' : 'auto'}
+  />
 
   {
     (mode === 'visible' || mode === 'hover') && caption && (
@@ -71,6 +99,15 @@ if (mode === 'hotspots' && hotspots.length === 0) {
     aspect-ratio: var(--ic-aspect-ratio);
     overflow: hidden;
     border-radius: var(--radius, 10px);
+  }
+
+  /* <picture> is inline by default, which would leave it not filling the
+     figure and the object-fit below doing nothing. It has to be sized too,
+     not just the <img> inside it. */
+  .image-caption picture {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .image-caption img {

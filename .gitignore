@@ -5,6 +5,17 @@ dist/
 # scripts/sync-preview-css.mjs. Ignored so nobody edits the copy and expects
 # it to survive — edit the source stylesheet instead.
 public/admin/preview.css
+
+# Responsive image variants, generated from the originals by
+# scripts/optimize-images.mjs on every build.
+#
+# NOT committed, deliberately. They're derived files: committing them would
+# multiply every photo by ten in the repository, in everyone's clone, and in
+# every writer's pull request diff. The cost is that Netlify regenerates them
+# on each deploy rather than reusing a cache — a few seconds for a blog this
+# size, and the script skips anything already fresh when the directory does
+# survive. If deploys ever get slow, committing this folder is the fix.
+public/images/reviews/optimized/
 node_modules/
 .DS_Store
 .claude/

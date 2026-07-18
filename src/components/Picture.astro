@@ -1,0 +1,67 @@
+---
+import { imageVariants } from '../lib/images.mjs';
+
+// Responsive <picture> for a photo in public/images/reviews/.
+//
+// Emits WebP with a JPEG fallback and a srcset the browser picks from,
+// using the variants scripts/optimize-images.mjs generated at build time.
+// See that file for why the photos can't go through Astro's own pipeline.
+//
+// Falls back to a plain <img> of the original when a photo has no variants
+// — which happens for a brand-new upload on the very first dev run before
+// the script has been run. Degrading to "correct but unoptimised" is the
+// right failure here; the alternative is a broken image while writing.
+
+interface Props {
+  src: string;
+  alt: string;
+  /** The `sizes` attribute — how wide this image renders at each breakpoint.
+      Getting this wrong is the usual reason srcset doesn't help: the browser
+      picks from srcset BEFORE stylesheets apply, so it can only know the
+      display width if we tell it. */
+  sizes?: string;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  class?: string;
+}
+
+const {
+  src,
+  alt,
+  sizes = '(max-width: 700px) 100vw, 700px',
+  loading = 'lazy',
+  fetchpriority = 'auto',
+  class: className,
+} = Astro.props;
+
+const variants = imageVariants(src);
+---
+
+{
+  variants ? (
+    <picture>
+      <source type="image/webp" srcset={variants.webpSrcset} sizes={sizes} />
+      <img
+        src={variants.fallback}
+        srcset={variants.jpgSrcset}
+        sizes={sizes}
+        alt={alt}
+        width={variants.width}
+        height={variants.height}
+        loading={loading}
+        fetchpriority={fetchpriority}
+        decoding="async"
+        class={className}
+      />
+    </picture>
+  ) : (
+    <img
+      src={src}
+      alt={alt}
+      loading={loading}
+      fetchpriority={fetchpriority}
+      decoding="async"
+      class={className}
+    />
+  )
+}

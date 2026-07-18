@@ -2,7 +2,7 @@
   "name": "restaurant-blog",
   "version": "0.1.0",
   "private": true,
-  "description": "Collietiel Adventures — an Astro restaurant review blog with a Git-backed CMS for non-technical writers.",
+  "description": "Collietiel Adventures \u2014 an Astro restaurant review blog with a Git-backed CMS for non-technical writers.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -10,16 +10,17 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "npm run sync:preview-css && astro dev",
+    "dev": "npm run sync:preview-css && npm run optimize:images && astro dev",
     "sync:preview-css": "node scripts/sync-preview-css.mjs",
-    "prebuild": "npm run sync:preview-css",
+    "prebuild": "npm run sync:preview-css && npm run optimize:images",
     "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:unit": "vitest run",
-    "test": "npm run build && python3 sitetest.py dist && vitest run"
+    "test": "npm run build && python3 sitetest.py dist && vitest run",
+    "optimize:images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^5.3.0",

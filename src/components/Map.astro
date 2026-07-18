@@ -5,6 +5,7 @@
 // that script as JSON — that's the whole mechanism behind "new review =
 // new pin", nothing else to wire up.
 import { getPublishedReviews, reviewCoords, starString } from '../lib/reviews';
+import { imageUrl } from '../lib/images.mjs';
 
 // Goes through the shared helper, not getCollection — so drafts are hidden
 // here on exactly the same terms as everywhere else. See src/lib/reviews.ts.
@@ -24,7 +25,10 @@ const pins = reviews.flatMap((r) => {
       lat: coords.lat,
       lng: coords.lng,
       stars: starString(r.data.rating),
-      cover: r.data.cover,
+      // An optimised URL, not the original: a map with twenty pins would
+      // otherwise pull twenty full-resolution photos the moment someone
+      // opens a popup. 800px covers a ~200px popup on a 3x display.
+      cover: r.data.cover ? imageUrl(r.data.cover, 800) : undefined,
       blurb: r.data.blurb,
     },
   ];
