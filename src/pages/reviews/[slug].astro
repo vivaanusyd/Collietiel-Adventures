@@ -2,9 +2,11 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ImageCaption from '../../components/ImageCaption.astro';
 import Blocks from '../../components/Blocks.astro';
+import ReviewSchema from '../../components/ReviewSchema.astro';
 import Icon from '../../components/Icon.astro';
 import { reactionLabel } from '../../lib/reactions';
 import {
+  cuisineSlug,
   getPublishedReviews,
   readingTimeMinutes,
   starString,
@@ -53,11 +55,19 @@ const label = reactionLabel(reaction);
 // one — the schema enforces it at publish time, not write time.
 const metaDescription = review.data.blurb || undefined;
 
+// Structured data needs ABSOLUTE URLs — a search engine has no page context
+// to resolve "/reviews/x" against. Falls back to the path when `site:` isn't
+// set, which only happens in a misconfigured build.
+const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.pathname;
+const coverUrl = cover && Astro.site ? new URL(cover, Astro.site).href : undefined;
+
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
 
 <BaseLayout title={pageTitle(name)} description={metaDescription} image={cover} type="article">
+  <ReviewSchema slot="head" review={review} url={canonicalUrl} imageUrl={coverUrl} />
+
   <a href="/">&larr; All reviews</a>
 
   {
@@ -97,8 +107,19 @@ const fmt = (d: Date) =>
     <span>{label}</span>
   </p>
 
+  {
+    /* Cuisine links to its index page. Not done on the card, because the
+      whole card is already a link and nesting one inside another is invalid
+      HTML that browsers resolve unpredictably. */
+  }
   <p class="review-meta">
-    {cuisine && <span>{cuisine} · </span>}
+    {
+      cuisine && (
+        <span>
+          <a href={`/cuisine/${cuisineSlug(cuisine)}`}>{cuisine}</a> ·{' '}
+        </span>
+      )
+    }
     {address && <span>{address} · </span>}
     <span>{minutes} min read</span>
   </p>

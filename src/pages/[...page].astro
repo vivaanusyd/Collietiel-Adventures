@@ -1,0 +1,129 @@
+---
+import type { GetStaticPaths, Page } from 'astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ReviewCard from '../components/ReviewCard.astro';
+import { getPublishedReviews, REVIEWS_PER_PAGE, type Review } from '../lib/reviews';
+import { siteTitle, pageTitle } from '../lib/site';
+
+// The homepage, paginated.
+//
+// This is a rest route (`[...page]`) rather than index.astro because that's
+// what lets page 1 stay at `/` — a `[page].astro` route would put it at
+// `/1` and leave the site's front door as a separate file with a duplicate
+// card grid. So: `/`, `/2`, `/3`. More specific routes (/about, /map) still
+// win over this one.
+//
+export const getStaticPaths = (async ({ paginate }) => {
+  const reviews = await getPublishedReviews();
+
+  // Page size is imported, not declared here, because sitemap.xml.ts needs
+  // the same number to know how many pages exist. Note that an IMPORT works
+  // inside getStaticPaths while a const in this file's frontmatter does not
+  // — Astro hoists this function out of the component module, so it can't
+  // see its siblings (that fails at generate time, not build time).
+  return paginate(reviews, { pageSize: REVIEWS_PER_PAGE });
+}) satisfies GetStaticPaths;
+
+interface Props {
+  page: Page<Review>;
+}
+
+const { page } = Astro.props;
+
+const draftCount = page.data.filter((r) => r.data.draft).length;
+
+// Page 1 is the site's front door and gets the site title; later pages say
+// which page they are, so the browser history and any search result that
+// picks one up aren't three identical "Collietiel Adventures" entries.
+const title = page.currentPage === 1 ? siteTitle() : pageTitle(`Reviews, page ${page.currentPage}`);
+---
+
+<BaseLayout title={title}>
+  {
+    /* Tells search engines these pages are a sequence, so they attribute the
+      series to the first page instead of treating /2 as a near-duplicate of
+      /. Only emitted when there IS a previous/next page. */
+  }
+  <Fragment slot="head">
+    {page.url.prev && <link rel="prev" href={page.url.prev} />}
+    {page.url.next && <link rel="next" href={page.url.next} />}
+  </Fragment>
+
+  <h1>Reviews</h1>
+
+  {
+    /* Dev-only editor's note. import.meta.env.DEV is false in a production
+      build, so this whole block disappears from the shipped HTML. */
+  }
+  {
+    import.meta.env.DEV && draftCount > 0 && (
+      <p class="editor-note">
+        <strong>Editing:</strong> {draftCount} draft{draftCount === 1 ? '' : 's'} shown below.
+        Drafts are stripped from <code>npm run build</code> and cannot reach the live site.
+      </p>
+    )
+  }
+
+  {
+    page.data.length === 0 ? (
+      <p class="empty">
+        No reviews published yet. Reviews written in <a href="/admin/">the editor</a> appear here
+        once they're merged.
+      </p>
+    ) : (
+      <div class="card-grid">
+        {page.data.map((review) => (
+          <ReviewCard review={review} />
+        ))}
+      </div>
+    )
+  }
+
+  {
+    page.lastPage > 1 && (
+      <nav class="pagination" aria-label="Review pages">
+        {page.url.prev ? (
+          <a href={page.url.prev} rel="prev">
+            &larr; Newer
+          </a>
+        ) : (
+          <span />
+        )}
+
+        <span class="pagination__count">
+          Page {page.currentPage} of {page.lastPage}
+        </span>
+
+        {page.url.next ? (
+          <a href={page.url.next} rel="next">
+            Older &rarr;
+          </a>
+        ) : (
+          <span />
+        )}
+      </nav>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .pagination__count {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+  }
+
+  .empty {
+    color: var(--color-muted);
+    max-width: 55ch;
+  }
+</style>

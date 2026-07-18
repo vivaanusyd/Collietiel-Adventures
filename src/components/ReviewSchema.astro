@@ -1,0 +1,75 @@
+---
+import { reviewCoords, type Review } from '../lib/reviews';
+
+// JSON-LD structured data for a single review: a schema.org Review whose
+// itemReviewed is a Restaurant.
+//
+// This is the highest-value SEO change available to this site, and it costs
+// no new fields — every value below already exists in the frontmatter.
+// Without it, a search engine sees a page with some stars drawn in text and
+// has to guess; with it, the page is explicitly "a rated review, of this
+// restaurant, at these coordinates, by this person, on this date". That's
+// what makes a result eligible to be shown as a review rather than a plain
+// blue link.
+//
+// Deliberately NOT emitting an aggregateRating: that property means "the
+// average of many ratings", and there is exactly one rating here — this
+// author's. Search engines treat a single-review aggregateRating as
+// misrepresentation, and it's the most common way sites earn a structured
+// data penalty.
+
+interface Props {
+  review: Review;
+  /** Absolute canonical URL of the review page. */
+  url: string;
+  /** Absolute URL of the cover photo, when there is one. */
+  imageUrl?: string;
+}
+
+const { review, url, imageUrl } = Astro.props;
+const { name, rating, date, updated, cuisine, address, author, blurb } = review.data;
+
+const coords = reviewCoords(review);
+
+// Built as an object and serialised, rather than written as a template
+// string, so the structure is checkable and a missing optional field can't
+// leave a dangling comma in the output.
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Review',
+  url,
+  itemReviewed: {
+    '@type': 'Restaurant',
+    name,
+    ...(address && { address }),
+    ...(cuisine && { servesCuisine: cuisine }),
+    ...(coords && {
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: coords.lat,
+        longitude: coords.lng,
+      },
+    }),
+  },
+  reviewRating: {
+    '@type': 'Rating',
+    ratingValue: rating,
+    // Stated explicitly because the default assumed scale is 1–5 only by
+    // convention. A 4 means nothing without knowing 5 is the top.
+    bestRating: 5,
+    worstRating: 1,
+  },
+  author: { '@type': 'Person', name: author },
+  datePublished: date.toISOString().split('T')[0],
+  ...(updated && { dateModified: updated.toISOString().split('T')[0] }),
+  ...(blurb && { reviewBody: blurb }),
+  ...(imageUrl && { image: imageUrl }),
+};
+
+// `<` is escaped so a restaurant name containing "</script>" can't break out
+// of the tag. JSON.stringify alone does not do this — it's valid JSON but
+// the browser's HTML parser closes the script element first.
+const json = JSON.stringify(schema).replace(/</g, '\\u003c');
+---
+
+<script type="application/ld+json" set:html={json} is:inline />

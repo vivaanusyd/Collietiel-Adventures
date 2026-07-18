@@ -49,6 +49,11 @@ const ogImage = image && Astro.site ? new URL(image, Astro.site).href : undefine
     <!-- Lets browsers and feed readers auto-discover the RSS feed. -->
     <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
 
+    <!-- Per-page additions to <head>: structured data, page-specific meta.
+         A named slot rather than a prop, so a page can add several things
+         without this layout growing a prop per kind of tag. -->
+    <slot name="head" />
+
     <!--
       ANALYTICS SLOT — intentionally empty. Paste your provider's snippet
       here, and read ANALYTICS.md first: some options legally require a
@@ -66,6 +71,7 @@ const ogImage = image && Astro.site ? new URL(image, Astro.site).href : undefine
         <div class="links">
           <a href="/">Home</a>
           <a href="/map">Map</a>
+          <a href="/about">About</a>
           <a href="/rss.xml">RSS</a>
         </div>
       </div>

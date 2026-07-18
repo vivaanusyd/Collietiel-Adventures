@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ReviewCard from '../../components/ReviewCard.astro';
+import { getCuisines, type Review } from '../../lib/reviews';
+import { pageTitle } from '../../lib/site';
+
+// One page per cuisine, generated from the `cuisine:` field. These are the
+// pages someone searching "sichuan newtown review" can actually land on —
+// the homepage is a single undifferentiated grid, which matches nothing in
+// particular.
+//
+// Built from getCuisines() rather than a hand-kept list, so adding a review
+// with a new cuisine creates its page, and removing the last review of a
+// cuisine removes it. sitemap.xml.ts reads the same helper, so the two can't
+// disagree about which pages exist.
+
+export async function getStaticPaths() {
+  const cuisines = await getCuisines();
+  return cuisines.map(({ slug, label, reviews }) => ({
+    params: { slug },
+    props: { label, reviews },
+  }));
+}
+
+interface Props {
+  label: string;
+  reviews: Review[];
+}
+
+const { label, reviews } = Astro.props;
+
+const count = reviews.length;
+const description = `${count} ${label} ${count === 1 ? 'review' : 'reviews'}.`;
+---
+
+<BaseLayout title={pageTitle(label)} description={description}>
+  <p class="breadcrumb"><a href="/">&larr; All reviews</a></p>
+
+  <h1>{label}</h1>
+  <p class="cuisine-count">
+    {count}
+    {count === 1 ? 'review' : 'reviews'}
+  </p>
+
+  <div class="card-grid">
+    {reviews.map((review) => <ReviewCard review={review} />)}
+  </div>
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    margin-bottom: 0.5rem;
+  }
+
+  .cuisine-count {
+    color: var(--color-muted);
+    margin-top: 0;
+  }
+</style>

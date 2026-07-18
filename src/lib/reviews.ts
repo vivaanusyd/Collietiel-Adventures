@@ -24,6 +24,74 @@ export async function getPublishedReviews(): Promise<Review[]> {
 }
 
 /**
+ * Reviews per page on the homepage.
+ *
+ * 12 because the card grid is 1–4 columns depending on width, and 12 divides
+ * evenly by 1, 2, 3 and 4 — so the last row is never a single orphaned card
+ * at any breakpoint.
+ *
+ * Lives here rather than in [...page].astro because the sitemap has to know
+ * how many pages exist. Astro hoists getStaticPaths out of the component, so
+ * it can't read a const declared beside it in the frontmatter — but it CAN
+ * read an import, which is why this works from both callers.
+ */
+export const REVIEWS_PER_PAGE = 12;
+
+/**
+ * URL-safe form of a cuisine name. "Café" -> "cafe", "Modern Australian"
+ * -> "modern-australian".
+ *
+ * Writers type cuisine as free text, so this has to be forgiving: strip
+ * accents, lowercase, collapse anything that isn't a letter or digit into a
+ * single hyphen. Two spellings that differ only by case or accent land on
+ * the same page, which is the point — "Cafe" and "Café" are one cuisine.
+ */
+export function cuisineSlug(cuisine: string): string {
+  return (
+    cuisine
+      .normalize('NFD') // splits "é" into "e" + a combining accent...
+      // ...which this removes. Written as escapes rather than the literal
+      // characters: combining marks are invisible in a source file and attach
+      // themselves to whatever precedes them, so the literal form is
+      // impossible to review and easy for tooling to mangle.
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  );
+}
+
+/**
+ * Every cuisine that has at least one published review, with its reviews.
+ *
+ * Drives both /cuisine/<slug> and those pages' sitemap entries, so a cuisine
+ * page can't exist without being listed, or be listed without existing.
+ *
+ * The display label is taken from the first review's spelling. Where writers
+ * disagree ("Cafe" vs "Café") they still share one page — the slug is what
+ * groups them — and the newest review's spelling wins, since that's the one
+ * most likely to reflect current house style.
+ */
+export async function getCuisines(): Promise<{ slug: string; label: string; reviews: Review[] }[]> {
+  const reviews = await getPublishedReviews();
+  const groups = new Map<string, { slug: string; label: string; reviews: Review[] }>();
+
+  for (const review of reviews) {
+    const cuisine = review.data.cuisine?.trim();
+    if (!cuisine) continue;
+
+    const slug = cuisineSlug(cuisine);
+    if (!slug) continue;
+
+    const existing = groups.get(slug);
+    if (existing) existing.reviews.push(review);
+    else groups.set(slug, { slug, label: cuisine, reviews: [review] });
+  }
+
+  return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/**
  * Where a review's pin goes, from either accepted spelling.
  *
  * The CMS map picker writes stringified GeoJSON to `location`; a file

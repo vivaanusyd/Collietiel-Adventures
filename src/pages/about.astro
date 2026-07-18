@@ -1,0 +1,89 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, pageTitle } from '../lib/site';
+
+// STRUCTURE ONLY — the prose is Vivaan's to write.
+//
+// The sections below are empty on purpose. An about page is the one page on
+// a review site that has to be in the author's own voice: it's where a
+// reader decides whether to trust the ratings, and generated filler would
+// undercut exactly the thing the page exists to establish. Each section has
+// a note saying what belongs there and why a reader wants it.
+//
+// To publish: replace each <p class="todo"> with real writing and delete the
+// `todo` class. The page is already in the nav and the sitemap.
+---
+
+<BaseLayout
+  title={pageTitle('About')}
+  description={`About ${SITE.name} — who writes these reviews and how they work.`}
+>
+  <h1>About</h1>
+
+  <section>
+    <h2>Who's writing</h2>
+    <p class="todo">
+      <!-- Who you are, and why you eat out enough to write about it. Two or
+           three sentences is plenty. Readers are deciding whether your taste
+           is a useful proxy for theirs. -->
+      To be written.
+    </p>
+  </section>
+
+  <section>
+    <h2>How these reviews work</h2>
+    <p class="todo">
+      <!-- The things a reader needs in order to read a rating correctly. Do
+           you pay for your own meals? Do you go more than once before
+           writing? Do you tell the restaurant who you are? This is the
+           section that makes a 3-star mean something. -->
+      To be written.
+    </p>
+  </section>
+
+  <section>
+    <h2>What the stars mean</h2>
+    <p class="todo">
+      <!-- What 1 through 5 actually mean here. Worth being concrete: on most
+           sites everything is a 4, and saying what a 3 is fixes that. -->
+      To be written.
+    </p>
+  </section>
+
+  <section>
+    <h2>The animals</h2>
+    <p class="todo">
+      <!-- The verdict badges and the emotion icons are unusual and readers
+           will wonder. A couple of sentences on what they're for. See
+           EDITING.md for the intent behind them. -->
+      To be written.
+    </p>
+  </section>
+
+  <section>
+    <h2>Get in touch</h2>
+    <p class="todo">
+      <!-- However you want to be contacted, if at all. There are no comments
+           on this site by design, so this is the only route a reader has. -->
+      To be written.
+    </p>
+  </section>
+</BaseLayout>
+
+<style>
+  section {
+    max-width: 60ch;
+    margin-bottom: 2rem;
+  }
+
+  /* Deliberately conspicuous. This page ships with placeholder sections, and
+     the one thing worse than an unwritten About page is an unwritten About
+     page that looks finished. Delete the class along with the placeholder. */
+  .todo {
+    padding: 0.6rem 0.9rem;
+    border-left: 4px solid var(--color-muted);
+    background: color-mix(in srgb, var(--color-muted) 10%, transparent);
+    color: var(--color-muted);
+    font-style: italic;
+  }
+</style>
