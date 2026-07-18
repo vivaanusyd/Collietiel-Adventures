@@ -2,7 +2,33 @@
    ever apply inside one component) live scoped inside that .astro file
    instead — this file is for layout, typography, and shared utilities. */
 
+/* Fonts are SELF-HOSTED (@fontsource), not loaded from Google Fonts.
+   Three reasons: no third-party request means the footer's "no trackers"
+   line stays true, the files are bundled and content-hashed so they cache
+   properly, and there's no render-blocking round trip to another domain.
+   Both are VARIABLE fonts — one file covers every weight, so using a
+   semibold costs nothing extra to download. */
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/inter';
+
 :root {
+  /* Fraunces for display, Inter for reading.
+
+     Fraunces is a "soft serif" with real character — it's what stops the
+     site reading as a default template, and it carries the same warmth as
+     the cream/red palette and the hand-drawn animals. It's used at large
+     sizes only, where its detail is visible and legible.
+
+     Inter is the body face: designed for screens, tall x-height, stays
+     readable at the small sizes a card blurb uses. Fraunces at 0.9rem
+     would look characterful and read poorly.
+
+     System fonts stay in the stack as fallbacks, so text renders
+     immediately in something sane if a font file is slow or blocked. */
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-body:
+    'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+
   --color-bg: #faf7f2;
   --color-text: #221e1a;
   --color-muted: #6b6258;
@@ -90,8 +116,40 @@ body {
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   line-height: 1.5;
+  /* Kerning and ligatures on — the reason to pay for a real typeface is
+     the detail, and these are off by default in some browsers. */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings carry the display face. Tighter line-height and a slight
+   negative tracking, because both loosen up visually at large sizes —
+   without this, a big heading reads as spaced-out rather than set. */
+h1,
+h2,
+h3,
+.brand {
+  font-family: var(--font-display);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  margin: 0.4em 0 0.3em;
+}
+
+/* Fraunces has an optical-size axis: its design changes with size rather
+   than just scaling. Setting it explicitly at display sizes is the whole
+   point of using a variable font here. */
+h1 {
+  font-variation-settings:
+    'SOFT' 20,
+    'WONK' 1,
+    'opsz' 100;
 }
 
 a {
