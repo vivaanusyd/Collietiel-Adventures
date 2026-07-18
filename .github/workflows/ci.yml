@@ -1,0 +1,66 @@
+# Runs on every pull request and every push to main.
+#
+# This matters more here than on a typical small site: writers submit their
+# work as pull requests from the CMS at /admin/, and most of them will never
+# run a build locally — they may not have a checkout at all. Without this,
+# the first sign that a review breaks the build is the live site failing to
+# deploy, and the writer has no way to see why.
+#
+# The check is exactly `npm test`, which is exactly what runs locally. One
+# command, one definition, so a green tick here means the same thing as a
+# green run on a laptop.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A writer fixing a typo pushes three times in a minute. Without this, all
+# three runs go to completion and the useful one queues behind the stale
+# ones. main is excluded — those runs are the record of what deployed.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Read-only. This workflow builds and tests; it has no reason to be able to
+# write to the repository, and a token that can't push is one that can't be
+# misused by anything that finds its way into a dependency.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Read from .nvmrc so this can't drift from local development or
+          # from NODE_VERSION in netlify.toml. Three copies of a version
+          # number is two too many.
+          node-version-file: .nvmrc
+          cache: npm
+
+      # sitetest.py is part of `npm test`. Pinned rather than left to the
+      # runner's default, because a runner image bumping Python is exactly
+      # the kind of thing that breaks a build for no visible reason.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # `npm ci` not `npm install`: installs exactly what package-lock.json
+      # says. A writer's PR should fail because of what they wrote, never
+      # because a transitive dependency published a new version this morning.
+      - run: npm ci
+
+      # Build + sitetest.py + unit tests, in one command.
+      - run: npm test
+
+      # Formatting is checked, never auto-fixed. A workflow that pushes
+      # formatting commits back onto a contributor's branch is a workflow
+      # that fights whoever is working on it.
+      - run: npm run format:check
