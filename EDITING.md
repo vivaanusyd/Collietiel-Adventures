@@ -1,199 +1,272 @@
-# Editing & publishing
+# Writing a review
 
-This site has two surfaces, and keeping them separate is the main design
-idea in the codebase.
+Everything here happens in your browser. You never need to install
+anything, and you can't break the site — see [What happens when you
+submit](#what-happens-when-you-submit).
 
-| | **Authoring surface** | **Reading surface** |
-|---|---|---|
-| Who it's for | You, writing | Everyone else |
-| What it is | Markdown files + frontmatter | Rendered pages, map, RSS, social cards |
-| Optimised for | Fast to write, hard to get wrong | Fast to load, accessible, shareable |
-| Where it lives | `src/content/reviews/` | `src/pages/`, `src/layouts/` |
+**The editor:** <https://collietiel-adventures.netlify.app/admin/>
 
-The **content schema** (`src/content/config.ts`) is the contract between
-them. It's the reason you can write a review without thinking about HTML,
-and the reason a malformed review fails the build instead of silently
-rendering something broken.
+> Editing the files directly instead? See
+> [docs/DEVELOPING.md](docs/DEVELOPING.md) — the schema, the frontmatter
+> reference, and how the pieces fit together.
 
 ---
 
-## Writing a new review
+## Signing in
 
-1. Add the cover photo to `public/images/reviews/`.
-2. Create `src/content/reviews/<slug>.md`. The filename becomes the URL.
-3. Fill in the frontmatter (below).
-4. `npm run dev` and look at it.
+Click **Sign in with GitHub**. If you don't have an account or haven't been
+added yet, ask Vivaan — it takes him a minute.
 
-That's the whole workflow. The homepage card, the map pin, the review
-page, the RSS entry and the sitemap entry all appear on their own.
+There's no separate password for this site, on purpose. Your GitHub account
+*is* the login, which means there's no site password to leak, and Vivaan can
+grant or remove access in one place.
 
-### Frontmatter
-
-```yaml
 ---
-name: "Bang Bang Noodles"          # required
-lat: -33.8908                      # required — map pin
-lng: 151.1957                      # required
-rating: 4                          # required — whole number 1-5
-date: 2026-02-10                   # required — first published
-cover: "/images/reviews/x.jpg"     # required — must start with /images/
-blurb: "Numbing, tangy, ..."       # required — 20-160 chars
-reaction: fox                      # required — see the animal list below
-coverAlt: "A bowl of dan dan..."   # optional but write one
-cuisine: "Sichuan"                 # optional
-address: "12 King St, Newtown"     # optional
-author: "Vivaan"                   # optional — defaults to Vivaan
-draft: true                        # optional — defaults to false
-updated: 2026-03-02                # optional — set when you revise
-hotspots:                          # optional — dish call-outs on the cover
-  - { x: 25, y: 70, label: "Galbi" }
----
-```
 
-### Cover hotspots (optional)
+## Starting a review
 
-Leave `hotspots` off and the cover photo renders plainly — that's the
-default, and usually the right one. Add it when a photo has specific things
-worth naming:
+Click **New Review** and work down the form. It asks for things in the order
+you'd naturally know them.
 
-```yaml
-hotspots:
-  - { x: 30, y: 60, label: "Galbi" }
-  - { x: 70, y: 20, label: "Banchan" }
-```
+### Restaurant name
 
-`x` and `y` are percentages from the **top-left of the photo**, so they hold
-their position when the image is resized or cropped to fit the frame.
-Readers click a dot to reveal the label. Both numbers are validated 0–100,
-so a typo fails the build rather than parking a dot off-screen.
+As it appears on the door. This also becomes the review's web address, so
+`Bang Bang Noodles` becomes `/reviews/bang-bang-noodles`.
 
-Keep it to two or three — the point is to name the thing you're about to
-write about, not to inventory the table.
+**That address can't be changed after publishing** without breaking every
+link anyone has shared. Get the name right before it goes live; typos in the
+name are worth fixing now, not later.
 
-### The verdict badge (`reaction:`)
+### Where is it?
 
-One per review, shown as a badge on the card and a line on the review page.
-This is the at-a-glance summary — distinct from the inline emotion icons
-you write into the prose (next section).
+Search for the address, or drag the pin on the map. That's it — you never
+type coordinates, and this is what puts the restaurant on the
+[map page](https://collietiel-adventures.netlify.app/map).
 
-| Key | Means |
+Drop the pin on the *front door* rather than the middle of the building, so
+someone following it on their phone arrives at the right place.
+
+### Cuisine
+
+One or two words: `Sichuan`, `Café`, `Seafood`. This groups the review onto
+a cuisine page with others like it, so **reuse an existing spelling** if one
+fits — `Cafe` and `Café` are treated as the same thing, but `Coffee shop` is
+a different page with one lonely review on it.
+
+### Date of visit
+
+When you actually went. Reviews are ordered by this, newest first.
+
+### Rating
+
+Whole stars, 1 to 5. There are no half stars — the site can't draw them, and
+the form won't let you enter one.
+
+### Verdict badge
+
+One animal per review, the at-a-glance summary that sits on the card.
+
+| | Means |
 |---|---|
-| `pig` | Go hungry |
-| `bear` | Huge portions |
-| `bee` | Sweet tooth territory |
-| `crab` | Seafood done right |
-| `owl` | Open late |
-| `cat` | Cosy, lingerable |
-| `fox` | Clever cooking |
-| `snail` | Take your time |
+| 🐷 Pig | Go hungry |
+| 🐻 Bear | Huge portions |
+| 🐝 Bee | Sweet tooth territory |
+| 🦀 Crab | Seafood done right |
+| 🦉 Owl | Open late |
+| 🐱 Cat | Cosy, lingerable |
+| 🦊 Fox | Clever cooking |
+| 🐌 Snail | Take your time |
 
-To add one: add an entry to `src/lib/reactions.ts` and drop a matching PNG
-in `public/icons/`. Two steps, nothing else. A typo like `reaction: dog`
-fails the build and prints the valid list.
+This is a different thing from the emotion icons you write into the review —
+this one is the summary, those are punctuation. More on them
+[below](#emotion-icons).
+
+### Blurb
+
+One sentence, 20–160 characters, with a counter showing where you are.
+
+The limit is tight because this sentence does **four jobs at once**: it's
+the text on the homepage card, the popup when someone taps the map pin, what
+appears in a feed reader, and the preview when the link is pasted into a
+chat. Write it so it makes sense with no other context — it's often the only
+thing someone reads.
+
+You can leave it empty while drafting. It's required to publish.
+
+### Cover photo
+
+Optional. A review with no photo still looks right — it just leads with the
+name instead. Add one when you have one.
+
+If you add a photo, write the **description** field too. That's what a
+screen reader says instead of the picture, and it's what shows if the image
+fails to load. "A bowl of dan dan noodles under a slick of chilli oil", not
+"photo".
 
 ---
 
-## Emotion icons in the writing
+## Writing the review itself
 
-Inside the review body, type a shortcode and it becomes an inline icon.
-This is the main expressive tool — use it as punctuation, mid-sentence.
+The review is built from **blocks**. Add a block, drag it where you want it,
+and each block has its own settings. You can reorder anything at any time.
 
-```markdown
-Six oysters for forty-two dollars :cockatiel-shocked: and they arrived on
-a tray roughly the size of a coaster. Once I got past the bill, though,
-the Sydney rocks themselves were excellent :collie-smiling: — briny,
-properly cold, shucked without a single shell fragment.
-```
+### The blocks, and when to use each
 
-Two characters covering the two ends of the register. The cockatiel's
-crest carries its mood (up = alarmed, flat = bored); the collie's ears and
-mouth carry its own.
+**Text** — the default, and most of a review. Bold, italic, links, headings,
+lists and quotes are in the toolbar.
 
-| Shortcode | Reach for it when |
+**Image** — one photo. The **Width** setting is where the layout happens:
+
+| Width | Use it for |
 |---|---|
-| `:cockatiel-shocked:` | Sticker shock, tiny portions, an absurd bill |
-| `:cockatiel-unimpressed:` | Bland, forgettable, phoned in |
-| `:cockatiel-suspicious:` | Something's off, proceed carefully |
-| `:collie-smiling:` | This is good, straightforwardly |
-| `:collie-delighted:` | Outstanding, the reason to come here |
-| `:collie-hopeful:` | Would come back, want more of this |
-| `:collie-sleepy:` | Cosy, unhurried, comfortable |
+| Full bleed | The one photo worth going edge-to-edge |
+| Wide | A photo that deserves more room than the text |
+| Normal | Most photos |
+| Inset | Something small — a detail, a menu corner |
+| Float left / right | A photo with text wrapping around it |
 
-**Behaviour worth knowing:**
+**Gallery** — two or three photos in a row. Good for a sequence of dishes.
+Four or more stops reading as a row, so it's capped at three.
 
-- A typo (`:colie-smiling:`) stays as literal text and warns in the
-  terminal. It deliberately does *not* fail the build — dying on a stray
-  colon in prose would be worse than a visible typo you can see and fix.
-- Ordinary colons are safe: `12:30`, `3:1` and `note: this` are untouched.
-- Shortcodes inside `` `backticks` `` are left alone, so you can write
-  about the syntax.
-- They carry alt text ("shocked cockatiel"), so a screen reader announces
-  them properly mid-sentence.
+**Annotated photo** — a photo with labelled dots on it, for naming specific
+things on a table. Two or three labels; the point is to name what you're
+about to write about, not to inventory the table.
 
-**Two things to keep in mind while writing.** At inline size the character
-is legible but fine emotional detail isn't — so let the *sentence* carry
-the meaning and the icon reinforce it, not the other way round. And they
-lose force if every sentence has one.
+**Pull quote** — one line, enlarged. A thing the menu said, or your own
+sentence worth stopping on.
 
-Size and baseline nudge are tunable in one place: `--emotion-icon-size` and
-`--emotion-icon-nudge` in `src/styles/global.css`.
+**Dish list** — dish, price, one-line note. For when you want to list what
+you ate without writing a paragraph about each. Prices are free text, so
+"market price" and "$18" are both fine.
 
-**To add an emotion:** add an entry to `src/lib/emotions.mjs` and drop a
-matching PNG in `public/icons/`. The build fails if you do only the first.
+### Photo descriptions are required
 
----
+Every photo needs a description before the block will save. It's the single
+most useful accessibility thing on the site, and unlike most such things it
+can only be written by the person who took the photo.
 
-## The draft workflow
+### Size, alignment and colour
 
-Set `draft: true` and the review is:
+Text blocks have three settings: **Size** (Small / Normal / Large /
+Display), **Alignment** (Left / Centred) and **Colour** (Default / Accent /
+Muted).
 
-- **visible** in `npm run dev`, with a red DRAFT badge, so you can read it
-  in the real layout;
-- **absent** from `npm run build` — no page, no map pin, no RSS entry, no
-  sitemap entry.
+You'll notice there's no colour picker and no font menu. That's deliberate.
+Those three colours are the site's palette — using them means that if the
+site is ever restyled, your review restyles with it. If everyone picked
+their own colours instead, every review would slowly drift apart from every
+other one, and fixing it later would mean editing every review by hand
+rather than changing one setting.
 
-There's no staging site and no publish button. Flip `draft` to `false`
-(or delete the line), rebuild, and it's live.
-
-`src/content/reviews/night-owl-dumplings.md` is a live example — delete it
-whenever you like.
-
-## Revising something already published
-
-Set `updated:` to today's date. Readers see "Updated <date>" under the
-byline, and the sitemap advertises the new date so search engines re-crawl
-it. Leave `updated` off for typo fixes; use it when you've changed your
-actual verdict, since that's the honest thing for a review.
-
-Don't rename the file after publishing — the filename is the URL, and
-renaming breaks every existing link to it.
+Same reason the sizes are named rather than numbers: **Large** stays large
+if the site's typography changes. `18px` just stays 18px.
 
 ---
 
-## What the schema enforces, and why
+## Emotion icons
 
-Each of these is a mistake I'd rather you hit in the terminal than in
-production:
+Inside your writing, the cockatiels and collies are the main expressive
+tool. Use them as punctuation, mid-sentence:
 
-| Rule | Reason |
+> Six oysters for forty-two dollars *[shocked cockatiel]* and they arrived
+> on a tray roughly the size of a coaster. Once I got past the bill, though,
+> the Sydney rocks themselves were excellent *[smiling collie]* — briny,
+> properly cold, shucked without a single shell fragment.
+
+To add one, click **Emotion icons** in the bottom-right of the editor and
+pick the face you want. It drops in wherever your cursor is.
+
+Two characters covering the two ends of the register. The cockatiel's crest
+carries its mood (up = alarmed, flat = bored); the collie's ears and mouth
+carry its own.
+
+| Reach for it when |
+|---|
+| **Shocked cockatiel** — sticker shock, tiny portions, an absurd bill |
+| **Unimpressed cockatiel** — bland, forgettable, phoned in |
+| **Suspicious cockatiel** — something's off, proceed carefully |
+| **Smiling collie** — this is good, straightforwardly |
+| **Delighted collie** — outstanding, the reason to come here |
+| **Hopeful collie** — would come back, want more of this |
+| **Sleepy collie** — cosy, unhurried, comfortable |
+
+Two things worth knowing about how they read:
+
+**Let the sentence carry the meaning.** At the size they render, the
+character is legible but fine emotional detail isn't. The icon should
+reinforce what you've written, not replace it — a sentence that only works
+with the icon doesn't work.
+
+**They lose force if every sentence has one.** Two or three in a review
+lands harder than a dozen.
+
+---
+
+## Seeing what it'll look like
+
+The preview pane shows the real page, with the real fonts and colours, as
+you type. Switch between desktop and phone width with the toggle — most
+readers are on a phone, so it's worth a look before you submit.
+
+---
+
+## What happens when you submit
+
+Nothing you do goes straight to the live site. When you save, your review
+becomes a **pull request** — a proposal for Vivaan to review.
+
+The editor shows your review moving through three columns:
+
+| Column | Means |
 |---|---|
-| `blurb` 20–160 chars | Under 20 says nothing; over 160 visibly breaks the card grid and gets truncated in social previews |
-| `rating` whole 1–5 | Keeps the star rendering honest — no half stars to render |
-| `cover` starts with `/images/` | Catches a relative path that would 404 only in production |
-| `lat`/`lng` in real ranges | Catches swapped coordinates, which otherwise put your pin in the ocean |
-| `reaction` from a fixed list | Guarantees the icon file exists |
+| **Drafts** | You're still working. Nobody else is looking. |
+| **In review** | You've submitted it. Waiting on Vivaan. |
+| **Ready** | Approved. Goes live when Vivaan publishes it. |
 
-## Pre-publish checklist
+You can keep editing at any stage; it just moves back to Drafts.
 
-- [ ] `coverAlt` describes the photo (it's what screen readers announce)
-- [ ] `blurb` reads well standalone — it's the card, the popup, the RSS
-      entry and the social preview
-- [ ] Pin lands in the right spot on `/map`
-- [ ] `draft` removed or set to `false`
-- [ ] `npm run build` passes
+**"Your review is awaiting review"** means it's in the middle column: you've
+done your part, and it's with Vivaan. He may publish it, or come back with
+comments.
 
-## Before your first real deploy
+### If something's wrong with it
 
-Set `site:` in `astro.config.mjs` to your actual domain. Until you do,
-canonical URLs, RSS links, the sitemap and social preview images all point
-at `example.com` and won't work.
+An automatic check runs on every submission. If it finds a problem you'll
+see a red ✗, and clicking through shows what's wrong — nearly always
+something required that's missing, like a blurb under 20 characters or a
+photo with no description. Fix it in the editor and it re-checks itself.
+
+This is a safety net, not a judgement. It exists so a mistake is caught
+before readers see it rather than after.
+
+---
+
+## Editing something already published
+
+Open it in the editor and change it. Same flow — it becomes a pull request.
+
+**If you've changed your actual verdict** — you went back, it was worse, the
+chef left — set **Date revised**. Readers see "Updated" with that date under
+your name, which is the honest thing to do when a review's conclusion
+changes. Leave it empty for typo fixes.
+
+**Don't change the restaurant name after publishing.** The name is the web
+address, so changing it breaks every link anyone has shared to that review.
+If it genuinely has to change, tell Vivaan so he can set up a redirect.
+
+---
+
+## A few habits worth having
+
+- **Write the blurb last.** It's easier to summarise a review you've
+  written than to predict one you haven't.
+- **Check it at phone width** before submitting.
+- **Say what you'd tell a friend.** The animals and the layout are there to
+  support that, not to replace it.
+- **A 3 is allowed to be a 3.** If everything is a 4, the ratings stop
+  meaning anything.
+
+---
+
+Something confusing, broken, or missing? Tell Vivaan — if the editor made
+you guess, that's worth fixing in the editor rather than in a habit.

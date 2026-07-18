@@ -1,83 +1,75 @@
-# restaurant-blog
+# Collietiel Adventures
 
-Astro + Leaflet/OpenStreetMap restaurant review blog. Reviews are Markdown
-files with typed frontmatter — no CMS, no database, no accounts.
+Astro + Leaflet/OpenStreetMap restaurant review blog, with a Git-backed CMS
+so non-technical writers can submit reviews without touching the code.
 
-- **[EDITING.md](EDITING.md)** — how to write, draft, and publish a review
-- **[ANALYTICS.md](ANALYTICS.md)** — what you can (and can't) learn about readers
+Live at <https://collietiel-adventures.netlify.app>.
 
-## Where things live
+## Start here
 
-One obvious place per kind of thing:
-
-| Kind of thing | Location |
+| You are | Read |
 |---|---|
-| Reviews (content) | `src/content/reviews/*.md` |
-| Review schema (the contract) | `src/content/config.ts` |
-| Review queries — **the only place that calls `getCollection`** | `src/lib/reviews.ts` |
-| Verdict badge list (`reaction:`) | `src/lib/reactions.ts` |
-| Inline emotion list (`:collie-smiling:`) | `src/lib/emotions.mjs` |
-| The `:shortcode:` → `<img>` plugin | `src/lib/remark-emotion-icons.mjs` |
-| Reusable components | `src/components/` |
-| Icons — **all of them, one folder** | `public/icons/*.png` |
-| Page shell, `<head>`, analytics slot | `src/layouts/BaseLayout.astro` |
-| Global styles | `src/styles/global.css` |
-| Routes | `src/pages/` |
-| Cover photos | `public/images/reviews/` |
+| Writing a review | **[EDITING.md](EDITING.md)** — the editor, the blocks, what happens when you submit |
+| Setting this up | **[docs/SETUP-CHECKLIST.md](docs/SETUP-CHECKLIST.md)** — the dashboard steps, in order |
+| Changing the code | **[docs/DEVELOPING.md](docs/DEVELOPING.md)** — architecture, schema, testing |
+| Wondering about readers | **[ANALYTICS.md](ANALYTICS.md)** — what you can and can't learn |
 
-### The one rule worth keeping
+## How it works
 
-**Pages don't call `getCollection('reviews')` — they call
-`getPublishedReviews()` from `src/lib/reviews.ts`.**
+Reviews are Markdown files with typed frontmatter in
+`src/content/reviews/`. There's no database and no reader accounts.
 
-That helper decides drafts are hidden in production. If each page fetched
-its own reviews, that decision would live in four files, and the day one
-drifts you'd publish an unfinished review. Adding a new page that lists
-reviews? Use the helper.
+Writers use the CMS at `/admin/`, which commits to this repository on their
+behalf. Sign-in is GitHub OAuth, so the permission check happens on GitHub's
+servers against real accounts — access is granted and revoked in the repo's
+collaborator list, and there is deliberately no password anywhere in the
+site. Writers' work arrives as a pull request; nothing they do reaches the
+live site directly.
 
-## Two icon systems, deliberately
+The review body is an ordered list of **blocks** — text, image, gallery,
+annotated photo, pull quote, dish list — each with its own settings. Style
+options are fixed lists drawn from the site palette rather than free colour
+and font pickers, so a redesign stays a stylesheet edit instead of a
+migration across every review. Reasoning in
+[`src/lib/blocks.ts`](src/lib/blocks.ts).
 
-| | Verdict badge | Inline emotion |
-|---|---|---|
-| Written as | `reaction: fox` in frontmatter | `:collie-smiling:` in the body |
-| How many | Exactly one per review | As many as the prose wants |
-| Shows up | Homepage card, review page | Mid-sentence, inline with text |
-| Defined in | `src/lib/reactions.ts` | `src/lib/emotions.mjs` |
-| Bad name | Fails the build | Stays literal + terminal warning |
-
-Both read their art from `public/icons/`. Details in
-[public/icons/README.md](public/icons/README.md).
+Reviews can still be written by hand as Markdown; the CMS is an additional
+way in, not a replacement.
 
 ## Commands
 
 ```bash
 npm install
-npm run dev      # http://localhost:4321 — drafts visible
-npm run build    # type-checks + builds to dist/ — drafts stripped
-npm run preview  # serve the production build locally
+npm run dev      # localhost:4321 — drafts visible
+npm run build    # type-check + build to dist/ — drafts stripped
+npm test         # build + sitetest.py + unit tests — what CI runs
+npm run format   # prettier (code only)
 ```
 
 ## Routes
 
 | Path | What |
 |---|---|
-| `/` | Card grid, newest first |
+| `/` | Card grid, newest first, paginated past 12 |
 | `/map` | Every review as a map pin |
 | `/reviews/<slug>` | One review |
+| `/cuisine/<slug>` | Every review of one cuisine |
+| `/about` | About — **structure only, prose not yet written** |
+| `/admin/` | The editor (GitHub sign-in) |
 | `/rss.xml` | Feed (hand-rolled, no dependency) |
 | `/sitemap.xml` | For search engines — submit this to Search Console |
 
 ## Deploying
 
-Static site, no adapter needed. Point Netlify or Vercel at the repo; both
-auto-detect Astro. Build command `npm run build`, output dir `dist`.
+Static site, no adapter. Netlify builds on push to `main`; config is in
+`netlify.toml`.
 
-**Set `site:` in `astro.config.mjs` to your real domain first** — canonical
-URLs, RSS links, the sitemap and social previews all derive from it and
-currently point at `example.com`.
+The editor's OAuth needs two environment variables set in the Netlify
+dashboard — see [docs/SETUP-CHECKLIST.md](docs/SETUP-CHECKLIST.md). They are
+never committed: a secret in Git is a secret published.
 
 ## Dependencies
 
-Two runtime: `astro`, `leaflet`. That's deliberate — RSS and the sitemap
-are hand-rolled endpoints (~40 lines each) rather than `@astrojs/rss` and
-`@astrojs/sitemap`.
+Three runtime: `astro`, `leaflet`, `@astrojs/markdown-remark`. RSS and the
+sitemap are hand-rolled endpoints (~40 lines each) rather than pulling in
+`@astrojs/rss` and `@astrojs/sitemap`.
