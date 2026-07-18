@@ -214,6 +214,10 @@ img {
   margin: 0;
 }
 
+.site-footer .footer-links {
+  margin-top: 0.4rem;
+}
+
 /* Some readers set "reduce motion" because movement makes them ill —
    vestibular disorders make transforms and sliding elements genuinely
    nauseating, not merely annoying. So this turns animation off rather than

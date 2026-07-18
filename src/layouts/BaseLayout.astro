@@ -69,10 +69,15 @@ const ogImage = image && Astro.site ? new URL(image, Astro.site).href : undefine
       <div class="container">
         <a class="brand" href="/">{SITE.mark} {SITE.name}</a>
         <div class="links">
+          {
+            /* RSS deliberately NOT here — it's in the footer. A feed link in
+              primary nav spends one of four top-level slots on something a
+              small minority of readers use, and the <link rel="alternate">
+              in <head> already lets feed readers find it automatically. */
+          }
           <a href="/">Home</a>
           <a href="/map">Map</a>
           <a href="/about">About</a>
-          <a href="/rss.xml">RSS</a>
         </div>
       </div>
     </nav>
@@ -86,6 +91,9 @@ const ogImage = image && Astro.site ? new URL(image, Astro.site).href : undefine
     <footer class="site-footer">
       <div class="container">
         <p>Written by hand. No trackers, no comments, no accounts.</p>
+        <p class="footer-links">
+          <a href="/rss.xml">RSS feed</a>
+        </p>
       </div>
     </footer>
   </body>

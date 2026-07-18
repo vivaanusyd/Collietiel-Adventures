@@ -10,6 +10,16 @@
 # Where the schema has a constraint, it is surfaced HERE as a widget rule so
 # the writer hits it while typing, not as a build error twenty minutes later.
 
+# Where the published site lives. WITHOUT this, "View on live site" in the
+# editor has no base URL to build a link from and silently does nothing —
+# which is exactly how it behaved before this line existed.
+#
+# Note that the link only resolves once a review is actually published:
+# drafts are stripped from the build (src/lib/reviews.ts), so there is no
+# live page for one yet. That's the draft workflow working, not a bug — use
+# the preview pane for unpublished work.
+site_url: https://collietiel-adventures.netlify.app
+
 backend:
   name: github
   repo: vivaanusyd/Collietiel-Adventures
