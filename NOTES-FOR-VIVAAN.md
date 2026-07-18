@@ -280,13 +280,76 @@ three likely causes.
 
 ---
 
+---
+
+## Second session — the canvas, and the site polish
+
+**Fixed:** "View on live site" (`site_url` was missing from the CMS config,
+so the button had no base URL and did nothing). RSS moved from the nav to
+the footer.
+
+**The canvas editor** — `/admin/arrange`, linked from the bottom-right of
+the CMS. Drag blocks anywhere, including overlapping. I was too broad when I
+pushed back on this earlier: drag-anywhere IS compatible with responsive, as
+long as what's stored is grid COORDINATES rather than pixels. That's how
+Squarespace's Fluid Engine works, and it's what this now does — 24 columns
+on desktop, 8 on phone, rows that grow to fit their content.
+
+The real cost is two layouts. Mobile is derived automatically (full width,
+stacked in desktop reading order), so you only touch it if you want
+something different there.
+
+**Still not joined up:** saving from the canvas copies the arrangement to
+your clipboard and you paste it into the review in the main editor. A direct
+commit would mean the canvas running its own OAuth and pull-request flow —
+a second half-built publishing path beside the one Sveltia already does
+properly. This is the seam between the two tools, and it's the thing I'd
+most like to close. Closing it means either Sveltia shipping
+`registerFieldType` (then the canvas becomes a widget and the seam vanishes)
+or committing to replacing Sveltia entirely.
+
+**Site polish, all four things from the research:**
+
+- **Typography** — Fraunces + Inter, self-hosted. The biggest single change
+  in how the site reads. No third-party request, so the "no trackers" line
+  stays true.
+- **Images** — this was the worst thing on the site. Photos were served at
+  whatever resolution came off the camera; a 4 MB phone photo went to a
+  reader on mobile data rendering it 380px wide. Now pre-generated at five
+  widths in WebP + JPEG, with map popups, social previews and structured
+  data all pointing at optimised copies too.
+- **Search** at `/search`, over a prebuilt index. No search library — at
+  this scale a dependency would cost more bytes than the corpus it indexes.
+- **Related reviews** at the end of each one, ranked by cuisine then rating.
+
+**On "can Google Drive be a server":** no — Drive is file storage, it can't
+run code. And you don't need one. Netlify already serves the site globally
+and runs your OAuth functions; images come off its CDN, which is faster than
+any single machine. Running it off your laptop would mean the site is down
+whenever the lid closes, your home IP is exposed, and most ISPs forbid it on
+residential plans. If the real question was "where do photos go as they pile
+up", that's Git LFS or an image CDN much later, not a server now.
+
+**New things worth a second opinion:**
+
+1. **Image variants aren't committed** (gitignored), so Netlify regenerates
+   them every deploy. Fine now; if deploys get slow with a lot of photos,
+   committing that folder is the fix.
+2. **The canvas has no image picker yet** — you type a path like
+   `/images/reviews/x.jpg` into the inspector. Upload through the CMS first,
+   then reference it. Worth wiring to the media library if you use the
+   canvas much.
+3. **Two editors is a real UX cost.** You chose this over replacing Sveltia,
+   which I agree with, but it's worth revisiting once you've actually
+   written a review with both.
+
 ## 8. How to check I didn't break anything
 
 ```bash
 npm test
 ```
 
-Build + `sitetest.py` + 36 unit tests. Currently: 0 failures, 0 errors, and
+Build + `sitetest.py` + 54 unit tests. Currently: 0 failures, 0 errors, and
 one pre-existing warning that the homepage has a single heading — which is
 correct, because there are no reviews to list yet. It resolves itself the
 moment you publish one.

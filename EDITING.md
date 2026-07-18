@@ -202,6 +202,43 @@ lands harder than a dozen.
 
 ---
 
+## Arranging the page (the canvas)
+
+The blocks above stack top to bottom, which is right for most reviews. When
+you want something else — a photo *beside* a paragraph, two things
+overlapping, a quote pushed off to one side — open the **canvas**.
+
+There's a button for it in the bottom-right of the editor, or go straight to
+[/admin/arrange/](https://collietiel-adventures.netlify.app/admin/arrange/).
+
+**How it works:**
+
+- Hover the **Add** tab on the left edge and a dock slides out. Click a
+  block type to drop one onto the page. (Click **Pin** to keep the dock
+  open while you work.)
+- **Drag** a block to move it. Grab its right or bottom edge to resize.
+- Click a block to open its settings on the right.
+- **Arrow keys** nudge the selected block one column; hold **Shift** for
+  four at a time. Often faster than dragging for small adjustments.
+- **Delete** removes the selected block, **Undo** steps back.
+
+**Blocks snap to a grid.** That's deliberate, and it's what stops the page
+falling apart: the canvas is 24 columns wide, and a block remembers *which
+columns* it sits in rather than how many pixels from the left. Pixels mean
+different things on different screens; columns don't.
+
+**Desktop and Phone are two separate arrangements.** Toggle between them at
+the top. The phone layout is filled in for you — everything full width,
+stacked in the order it reads on desktop — so you only touch it if you want
+something different there. Worth a look before you finish, since most
+readers are on a phone.
+
+**Saving:** the canvas copies your arrangement to the clipboard, and you
+paste it back into the review in the main editor. Not elegant — the two
+tools aren't joined up yet. Vivaan knows.
+
+---
+
 ## Seeing what it'll look like
 
 The preview pane shows the real page, with the real fonts and colours, as

@@ -145,24 +145,71 @@ the CMS test will fail until you do.
 `blocks:` is an ordered list rendered by `Blocks.astro`. Six types: text,
 image, gallery, annotated, quote, dishes.
 
-Blocks rather than a freeform canvas, because absolute positioning breaks at
-any other browser width — which is most readers, since most are on phones —
-can't survive a font-size change, and makes every page a bespoke layout no
-restyle can touch. Notion, Squarespace, Webflow and Medium are all
-block-flow underneath for the same reasons.
+A block either FLOWS (stacked, the default) or is PLACED via `layout` — see
+**The canvas editor** below. `Blocks.astro` decides where things go;
+`BlockContent.astro` renders one block regardless of where it sits.
+
+Positioning is grid coordinates rather than pixels, which is what lets the
+canvas offer genuine drag-anywhere — including overlap — without pages
+breaking at other widths or surviving a font-size change badly. Absolute
+pixel positioning would do neither.
 
 Style options are fixed lists (`block-options.mjs`), not pickers. See the
 comment at the top of that file.
 
 **To add a block type**, four places: a variant in `src/lib/blocks.ts`, a
-name in `block-options.mjs`, a `case` in `Blocks.astro`, and a `types:`
-entry in `public/admin/config.yml`. The CMS test fails until the first and
-last agree.
+name in `block-options.mjs`, a branch in `BlockContent.astro`, and a
+`types:` entry in `public/admin/config.yml`. The CMS test fails until the
+first and
+last agree. The canvas dock in `src/scripts/arrange.ts` also lists the
+types, and needs schema-matching defaults there so a newly added block is
+valid the moment it's saved.
 
 Text blocks render through `src/lib/markdown.ts`, which uses the same remark
 pipeline as the review body — that's what makes `:collie-smiling:` work
 inside a block. If you add a remark plugin to `astro.config.mjs`, add it
 there too, or shortcodes will work in the body and silently not in blocks.
+
+## The canvas editor
+
+`/admin/arrange` (`src/pages/admin/arrange.astro` + `src/scripts/arrange.ts`)
+positions blocks on a grid. A block with no `layout` flows as before; one
+with `layout.desktop` is placed.
+
+Placement is grid COORDINATES, never pixels — 24 columns on desktop, 8 on
+phone, rows `minmax(24px, auto)` so a block whose content overflows grows its
+row instead of colliding. Mobile is derived from desktop reading order unless
+`layout.mobile` is set.
+
+**`src/lib/layout.mjs` is shared by the editor and the published page.** That
+is the whole reason the editor is an Astro page rather than a static file in
+`public/` — a second copy of the grid maths would eventually disagree with
+the site about where a block sits, and an editor you can't trust is worse
+than none.
+
+It lives outside Sveltia because `registerFieldType` is unimplemented
+upstream. Saving copies the arrangement out rather than committing; wiring it
+to GitHub would mean a second OAuth flow and pull-request path beside the one
+Sveltia already runs.
+
+`/admin/reviews.json` feeds it, and is the ONE place `getCollection` is
+called directly rather than through `getPublishedReviews()` — the editor
+needs drafts. Those files are already public in the repo, so it exposes
+nothing new.
+
+## Images
+
+Photos live in `public/images/reviews/` because the CMS writes there and the
+map's client-side JS needs a plain URL — which puts them outside Astro's
+image pipeline entirely. `scripts/optimize-images.mjs` runs on `prebuild`,
+generating WebP + JPEG at five widths into `optimized/` plus a manifest.
+
+- `<Picture>` emits the `<picture>`/srcset. Pass `sizes` — the browser picks
+  from srcset before stylesheets apply, so it can only know the display width
+  if told.
+- `imageUrl(src, width)` for anywhere a srcset can't go: map popups, OG
+  images, JSON-LD.
+- Variants are gitignored; Netlify regenerates them per deploy.
 
 ## The draft workflow
 
@@ -179,6 +226,7 @@ being forgotten.
 test/remark-emotion-icons.test.mjs   the shortcode plugin
 test/xml.test.ts                     the feed escaper
 test/cms-config.test.mjs             CMS config vs. schema
+test/search.test.mjs                 search ranking
 sitetest.py                          the built dist/ — links, meta, feeds, a11y
 ```
 
