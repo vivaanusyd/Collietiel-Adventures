@@ -13,6 +13,7 @@ Live at <https://collietiel-adventures.netlify.app>.
 | Setting this up | **[docs/SETUP-CHECKLIST.md](docs/SETUP-CHECKLIST.md)** — the dashboard steps, in order |
 | Changing the code | **[docs/DEVELOPING.md](docs/DEVELOPING.md)** — architecture, schema, testing |
 | Wondering about readers | **[ANALYTICS.md](ANALYTICS.md)** — what you can and can't learn |
+| Planning what's next | **[docs/ROADMAP.md](docs/ROADMAP.md)** — accounts, comments, admin area, and what each costs |
 
 ## How it works
 
