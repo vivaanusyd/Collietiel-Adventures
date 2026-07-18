@@ -31,3 +31,35 @@ export const IMAGE_LAYOUTS = ['full', 'wide', 'normal', 'inset', 'left', 'right'
 
 /** Every block type the editor offers. */
 export const BLOCK_TYPES = ['text', 'image', 'gallery', 'annotated', 'quote', 'dishes'];
+
+// --- the layout grid -----------------------------------------------------
+//
+// How "put anything anywhere" works without shattering on a phone.
+//
+// A block can carry an optional `layout` giving its position as GRID
+// COORDINATES — a column to start at, a column to end at, and a row. Not
+// pixels. This is the model Squarespace's Fluid Engine uses, and the reason
+// it can offer a genuine drag-anywhere canvas that still reflows: a
+// coordinate on a 24-column grid means the same thing at any screen width,
+// where "x: 340px" does not.
+//
+// Two grids, stored independently, because that's the honest cost of the
+// feature: a layout that reads well across three desktop columns has to be
+// re-thought for a phone, and no algorithm can guess the intent. The mobile
+// layout is DERIVED automatically (top-to-bottom, full width) unless a
+// writer overrides it, so the common case needs no second pass.
+//
+// Rows use `minmax(row-height, auto)`, so a block whose text wraps longer
+// than expected pushes the grid down instead of overlapping its neighbour.
+// That's what makes this safe without JavaScript measuring anything.
+
+/** Columns on the desktop canvas. 24 divides by 2, 3, 4, 6, 8 and 12 — so
+    halves, thirds and quarters all land on exact column boundaries. */
+export const GRID_COLUMNS = 24;
+
+/** Columns on the phone canvas. 8 is enough to offset and inset something
+    without pretending a 380px screen supports a three-column layout. */
+export const GRID_COLUMNS_MOBILE = 8;
+
+/** Height of one grid row, in CSS pixels. Rows grow past this as needed. */
+export const GRID_ROW_HEIGHT = 24;

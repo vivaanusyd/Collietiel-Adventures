@@ -292,7 +292,7 @@ collections:
                   Required. This is what a screen reader announces instead of
                   the picture, so describe what's in it.
               - { name: caption, label: Caption (optional), widget: string, required: false }
-              - name: layout
+              - name: width
                 label: Width
                 widget: select
                 default: normal

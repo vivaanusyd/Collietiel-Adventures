@@ -1,0 +1,104 @@
+---
+import ImageCaption from './ImageCaption.astro';
+import { renderMarkdown } from '../lib/markdown';
+import type { Block } from '../lib/blocks';
+
+// Renders ONE block's content, with no opinion about where it sits.
+//
+// Split out from Blocks.astro so the same rendering serves a block whether
+// it's flowing in a column or placed on the canvas grid. Before this split,
+// the markdown for text blocks was rendered into an array indexed by
+// position — which silently broke the moment blocks were partitioned into
+// two lists and the indices no longer lined up.
+
+interface Props {
+  block: Block;
+}
+
+const { block } = Astro.props;
+
+// Text blocks hold Markdown and go through the SAME pipeline as the review
+// body, which is what makes `:collie-smiling:` work inside a block. Astro
+// components can be async, so this renders per-block rather than needing a
+// pre-pass keyed by index.
+const html = block.type === 'text' ? await renderMarkdown(block.body) : null;
+---
+
+{
+  block.type === 'text' && (
+    <div
+      class:list={[
+        'block block--text',
+        `is-${block.size}`,
+        `is-${block.align}`,
+        `is-${block.emphasis}`,
+      ]}
+      set:html={html}
+    />
+  )
+}
+
+{
+  block.type === 'image' && (
+    <div class:list={['block block--image', `is-${block.width}`]}>
+      <ImageCaption
+        src={block.src}
+        alt={block.alt}
+        caption={block.caption}
+        mode={block.caption ? 'visible' : 'hover'}
+      />
+    </div>
+  )
+}
+
+{
+  block.type === 'gallery' && (
+    <div class:list={['block block--gallery', `is-${block.images.length}up`]}>
+      {block.images.map((img) => (
+        <ImageCaption
+          src={img.src}
+          alt={img.alt}
+          caption={img.caption}
+          mode={img.caption ? 'visible' : 'hover'}
+          aspectRatio="1 / 1"
+        />
+      ))}
+    </div>
+  )
+}
+
+{
+  block.type === 'annotated' && (
+    <div class="block block--annotated">
+      <ImageCaption src={block.src} alt={block.alt} mode="hotspots" hotspots={block.hotspots} />
+      {block.caption && <p class="block__caption">{block.caption}</p>}
+    </div>
+  )
+}
+
+{
+  block.type === 'quote' && (
+    <blockquote class:list={['block block--quote', `is-${block.align}`]}>
+      <p>{block.text}</p>
+      {block.attribution && <cite>{block.attribution}</cite>}
+    </blockquote>
+  )
+}
+
+{
+  block.type === 'dishes' && (
+    <div class="block block--dishes">
+      <ul>
+        {block.items.map((item) => (
+          <li class="dish">
+            <div class="dish__head">
+              <span class="dish__name">{item.name}</span>
+              {item.price && <span class="dish__price">{item.price}</span>}
+            </div>
+            {item.note && <p class="dish__note">{item.note}</p>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}

@@ -1,16 +1,23 @@
 ---
-import ImageCaption from './ImageCaption.astro';
-import { renderMarkdown } from '../lib/markdown';
+import BlockContent from './BlockContent.astro';
+import { deriveMobileLayout, gridStyle, partitionBlocks, placementStyle } from '../lib/layout.mjs';
 import type { Block } from '../lib/blocks';
 
-// Renders the ordered `blocks:` list from a review's frontmatter — what the
-// CMS block editor produces. See src/lib/blocks.ts for the vocabulary and
-// why it's blocks rather than a freeform canvas.
+// Lays out a review's blocks. The rendering of each block lives in
+// BlockContent.astro; this file only decides WHERE things go.
 //
-// Every style choice below resolves to a class, never an inline style. That
-// is the whole point of constraining the options: the values live in
-// global.css, so restyling the site later is a stylesheet edit rather than a
-// migration across hundreds of content files.
+// Two arrangements, and a review can use both:
+//
+//   FLOWED  — stacked in order, in the reading column. The default, what
+//             the CMS block list produces, and what every review written
+//             before the canvas existed uses.
+//   PLACED  — positioned on a grid by the canvas editor at /admin/arrange,
+//             which is how a photo ends up beside a paragraph or overlapping
+//             one.
+//
+// Placement is grid coordinates, never pixels — see src/lib/blocks.ts. The
+// coordinate-to-CSS conversion is in src/lib/layout.mjs, shared with the
+// editor, so what a writer drags is exactly what a reader gets.
 
 interface Props {
   blocks: Block[];
@@ -18,103 +25,84 @@ interface Props {
 
 const { blocks } = Astro.props;
 
-// Text blocks hold Markdown, so they go through the SAME pipeline as the
-// review body — which is what makes `:collie-smiling:` work inside a block.
-// Rendering is async, so it happens here rather than inline in the template.
-const rendered = await Promise.all(
-  blocks.map(async (block) => (block.type === 'text' ? await renderMarkdown(block.body) : null))
-);
+const { flowed, placed } = partitionBlocks(blocks);
+
+// Phone placements, derived from the desktop arrangement unless the writer
+// arranged mobile deliberately. Computed once rather than per block.
+const mobilePlacements = deriveMobileLayout(placed);
 ---
 
 <div class="blocks">
+  {flowed.map((block) => <BlockContent block={block} />)}
+
   {
-    blocks.map((block, i) => {
-      switch (block.type) {
-        case 'text':
-          return (
-            <div
-              class:list={[
-                'block block--text',
-                `is-${block.size}`,
-                `is-${block.align}`,
-                `is-${block.emphasis}`,
-              ]}
-              set:html={rendered[i]}
-            />
-          );
-
-        case 'image':
-          return (
-            <div class:list={['block block--image', `is-${block.layout}`]}>
-              <ImageCaption
-                src={block.src}
-                alt={block.alt}
-                caption={block.caption}
-                mode={block.caption ? 'visible' : 'hover'}
-              />
-            </div>
-          );
-
-        case 'gallery':
-          return (
-            <div class:list={['block block--gallery', `is-${block.images.length}up`]}>
-              {block.images.map((img) => (
-                <ImageCaption
-                  src={img.src}
-                  alt={img.alt}
-                  caption={img.caption}
-                  mode={img.caption ? 'visible' : 'hover'}
-                  aspectRatio="1 / 1"
-                />
-              ))}
-            </div>
-          );
-
-        case 'annotated':
-          return (
-            <div class="block block--annotated">
-              <ImageCaption
-                src={block.src}
-                alt={block.alt}
-                mode="hotspots"
-                hotspots={block.hotspots}
-              />
-              {block.caption && <p class="block__caption">{block.caption}</p>}
-            </div>
-          );
-
-        case 'quote':
-          return (
-            <blockquote class:list={['block block--quote', `is-${block.align}`]}>
-              <p>{block.text}</p>
-              {block.attribution && <cite>{block.attribution}</cite>}
-            </blockquote>
-          );
-
-        case 'dishes':
-          return (
-            <div class="block block--dishes">
-              <ul>
-                {block.items.map((item) => (
-                  <li class="dish">
-                    <div class="dish__head">
-                      <span class="dish__name">{item.name}</span>
-                      {item.price && <span class="dish__price">{item.price}</span>}
-                    </div>
-                    {item.note && <p class="dish__note">{item.note}</p>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-      }
-    })
+    placed.length > 0 && (
+      <div class="block-grid" style={gridStyle()}>
+        {placed.map((block) => (
+          <div class="block-grid__item" style={placementStyle(block, mobilePlacements.get(block))}>
+            <BlockContent block={block} />
+          </div>
+        ))}
+      </div>
+    )
   }
 </div>
 
 <style>
   .blocks {
     margin-top: 1.5rem;
+  }
+
+  /* --- the canvas grid -------------------------------------------------
+     Where "put anything anywhere" actually happens.
+
+     The critical rule is `minmax(var(--row-height), auto)`: a row is at
+     least one unit tall, but STRETCHES to fit its content. That single
+     declaration is what makes a drag-anywhere canvas safe — if a paragraph
+     wraps to more lines than the writer allowed for, the row grows and
+     pushes everything below it down, instead of the text spilling over the
+     block underneath. Nothing measures anything in JavaScript.
+
+     The grid breaks out of the 65ch reading column, because a layout
+     someone arranged across a wide canvas is the whole point of arranging
+     it. It stops at the viewport, so it can never cause a sideways scroll. */
+  .block-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-columns), 1fr);
+    grid-auto-rows: minmax(var(--row-height), auto);
+    gap: 0 1rem;
+    margin: 2rem 0;
+    width: min(100vw - 3rem, 1000px);
+    margin-inline: calc(50% - min(50vw - 1.5rem, 500px));
+  }
+
+  .block-grid__item {
+    grid-area: var(--area-desktop);
+    z-index: var(--z);
+    /* Positioned items shouldn't carry the flow spacing — the writer's
+       coordinates already say where the gaps are. */
+    min-width: 0;
+  }
+
+  .block-grid__item > :global(.block) {
+    margin: 0;
+    height: 100%;
+  }
+
+  /* Phones get the mobile coordinates: either the writer's, or the derived
+     full-width stack. Applied via a media query, which is why the two areas
+     are custom properties rather than an inline grid-area — an inline style
+     would beat any media query and pin every screen to the desktop layout. */
+  @media (max-width: 700px) {
+    .block-grid {
+      grid-template-columns: repeat(var(--grid-columns-mobile), 1fr);
+      width: 100%;
+      margin-inline: 0;
+    }
+
+    .block-grid__item {
+      grid-area: var(--area-mobile);
+    }
   }
 
   .block {

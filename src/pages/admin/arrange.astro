@@ -1,0 +1,509 @@
+---
+import '../../styles/global.css';
+import { GRID_COLUMNS, GRID_COLUMNS_MOBILE, GRID_ROW_HEIGHT } from '../../lib/block-options.mjs';
+
+// The canvas editor — drag anything anywhere on a review page.
+//
+// WHY THIS IS A SEPARATE PAGE FROM THE CMS
+//
+// Sveltia's custom field-type API (registerFieldType) is documented but not
+// implemented — it's on their 1.0 milestone. A drag canvas can't be a
+// Sveltia widget until that lands, so it lives here. Sveltia keeps doing
+// what it does well (sign-in, text, media, pull requests); this does the
+// one thing it can't.
+//
+// WHY AN ASTRO PAGE RATHER THAN A STATIC FILE IN public/
+//
+// So it can import the SAME layout code the published page uses
+// (src/lib/layout.mjs, block-options.mjs). If the editor had its own copy
+// of the grid maths, the canvas would eventually disagree with the site
+// about where a block sits — which is the one bug that would make the whole
+// tool untrustworthy.
+
+const gridConfig = {
+  columns: GRID_COLUMNS,
+  columnsMobile: GRID_COLUMNS_MOBILE,
+  rowHeight: GRID_ROW_HEIGHT,
+};
+---
+
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Arrange — Collietiel Adventures</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script
+      type="application/json"
+      id="grid-config"
+      set:html={JSON.stringify(gridConfig)}
+      is:inline
+    />
+  </head>
+  <body class="arrange">
+    <header class="bar">
+      <a class="bar__back" href="/admin/">&larr; Editor</a>
+
+      <label class="bar__field">
+        <span class="sr-only">Review</span>
+        <select id="review-select"><option>Loading…</option></select>
+      </label>
+
+      <div class="bar__spacer"></div>
+
+      <div class="viewport-toggle" role="group" aria-label="Preview width">
+        <button type="button" data-viewport="desktop" class="is-active">Desktop</button>
+        <button type="button" data-viewport="mobile">Phone</button>
+      </div>
+
+      <button type="button" id="undo" class="bar__btn" disabled>Undo</button>
+      <button type="button" id="save" class="bar__btn bar__btn--primary" disabled>
+        Save as draft
+      </button>
+    </header>
+
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <!--
+      THE DOCK — hides at the edge, slides out on hover.
+
+      Modelled on Ultimate Chicken Horse's block picker, and the reason that
+      interaction works is worth stating: the palette is only relevant while
+      you're deciding what to place, so it stays out of the way of the thing
+      you're actually looking at (the page), but it's always in the same
+      place so reaching for it is muscle memory rather than a hunt through a
+      menu.
+
+      It stays open while a drag is in progress and can be pinned, because a
+      dock that vanishes mid-gesture is worse than one that never hid.
+    -->
+    <aside class="dock" id="dock">
+      <div class="dock__tab" aria-hidden="true">
+        <span>Add</span>
+      </div>
+      <div class="dock__panel">
+        <button type="button" class="dock__pin" id="dock-pin" aria-pressed="false" title="Keep open"
+          >Pin</button
+        >
+        <p class="dock__hint">Drag onto the page</p>
+        <div class="dock__items" id="dock-items"></div>
+      </div>
+    </aside>
+
+    <main class="stage" id="stage">
+      <div class="canvas-wrap">
+        <div class="canvas" id="canvas" data-viewport="desktop">
+          <div class="canvas__grid" id="canvas-grid" aria-hidden="true"></div>
+          <div class="canvas__blocks" id="canvas-blocks"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Settings for whichever block is selected. Empty until one is. -->
+    <aside class="inspector" id="inspector" hidden></aside>
+
+    <script>
+      import '../../scripts/arrange.ts';
+    </script>
+
+    <style is:global>
+      .arrange {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      /* --- top bar --- */
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 1rem;
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-surface);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+
+      .bar__spacer {
+        flex: 1;
+      }
+
+      .bar__back {
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      .bar select,
+      .bar__btn {
+        font: inherit;
+        font-size: 0.9rem;
+        padding: 0.4rem 0.7rem;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        background: var(--color-bg);
+        color: var(--color-text);
+        cursor: pointer;
+      }
+
+      .bar__btn--primary {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+        color: #fff;
+      }
+
+      .bar__btn:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .viewport-toggle {
+        display: flex;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .viewport-toggle button {
+        font: inherit;
+        font-size: 0.85rem;
+        padding: 0.35rem 0.75rem;
+        border: 0;
+        background: var(--color-bg);
+        color: var(--color-muted);
+        cursor: pointer;
+      }
+
+      .viewport-toggle button.is-active {
+        background: var(--color-accent);
+        color: #fff;
+      }
+
+      .status {
+        margin: 0;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        color: var(--color-muted);
+        min-height: 1.2em;
+      }
+
+      .status[data-tone='ok'] {
+        color: #1a7f37;
+      }
+
+      .status[data-tone='error'] {
+        color: var(--color-warning-line);
+      }
+
+      /* --- the dock ---
+         Hidden at the edge; slides out on hover or focus. The tab stays
+         visible so it's discoverable rather than a secret gesture. */
+      .dock {
+        position: fixed;
+        left: 0;
+        top: 45%;
+        transform: translateY(-50%);
+        z-index: 40;
+        display: flex;
+        align-items: center;
+      }
+
+      .dock__tab {
+        background: var(--color-accent);
+        color: #fff;
+        writing-mode: vertical-rl;
+        padding: 1rem 0.35rem;
+        border-radius: 0 8px 8px 0;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+
+      .dock__panel {
+        width: 190px;
+        margin-left: -190px;
+        opacity: 0;
+        pointer-events: none;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-left: 0;
+        border-radius: 0 10px 10px 0;
+        padding: 0.75rem;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+        transition:
+          margin-left 0.18s ease,
+          opacity 0.18s ease;
+      }
+
+      .dock:hover .dock__panel,
+      .dock:focus-within .dock__panel,
+      .dock.is-pinned .dock__panel {
+        margin-left: 0;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* The dock is a convenience, not the only way in — every block type is
+         also reachable by keyboard through the panel's buttons. */
+      @media (prefers-reduced-motion: reduce) {
+        .dock__panel {
+          transition: none;
+        }
+      }
+
+      .dock__hint {
+        margin: 0 0 0.5rem;
+        font-size: 0.75rem;
+        color: var(--color-muted);
+      }
+
+      .dock__pin {
+        float: right;
+        font: inherit;
+        font-size: 0.7rem;
+        padding: 0.15rem 0.4rem;
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        background: var(--color-bg);
+        color: var(--color-muted);
+        cursor: pointer;
+      }
+
+      .dock__pin[aria-pressed='true'] {
+        background: var(--color-accent);
+        color: #fff;
+        border-color: var(--color-accent);
+      }
+
+      .dock__items {
+        display: grid;
+        gap: 0.3rem;
+        clear: both;
+      }
+
+      .dock__item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.45rem 0.5rem;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: none;
+        font: inherit;
+        font-size: 0.85rem;
+        color: var(--color-text);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .dock__item:hover,
+      .dock__item:focus-visible {
+        background: var(--color-bg);
+        border-color: var(--color-border);
+      }
+
+      .dock__icon {
+        width: 1.4em;
+        text-align: center;
+        color: var(--color-accent);
+      }
+
+      /* --- the canvas --- */
+      .stage {
+        flex: 1;
+        padding: 1rem 1rem 6rem;
+        display: flex;
+        justify-content: center;
+      }
+
+      .canvas-wrap {
+        width: 100%;
+        max-width: 1000px;
+      }
+
+      .canvas {
+        position: relative;
+        min-height: 70vh;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        margin-inline: auto;
+        transition: max-width 0.2s ease;
+      }
+
+      /* The phone view is genuinely narrow, not a scaled-down desktop —
+         arranging against a real width is the only way to see what a reader
+         on a phone sees. */
+      .canvas[data-viewport='mobile'] {
+        max-width: 390px;
+      }
+
+      .canvas__grid,
+      .canvas__blocks {
+        display: grid;
+        grid-template-columns: repeat(var(--cols, 24), 1fr);
+        grid-auto-rows: 24px;
+      }
+
+      .canvas__grid {
+        position: absolute;
+        inset: 0;
+        background-image: repeating-linear-gradient(
+          to right,
+          color-mix(in srgb, var(--color-border) 70%, transparent) 0 1px,
+          transparent 1px calc(100% / var(--cols, 24))
+        );
+        background-size: 100% 100%;
+        pointer-events: none;
+        opacity: 0.6;
+      }
+
+      .canvas__blocks {
+        position: relative;
+        min-height: 70vh;
+        padding: 0;
+      }
+
+      .cblock {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.4rem;
+        overflow: hidden;
+        padding: 0.4rem 0.5rem;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        background: var(--color-surface);
+        font-size: 0.8rem;
+        line-height: 1.35;
+        cursor: grab;
+        touch-action: none;
+      }
+
+      .cblock:active {
+        cursor: grabbing;
+      }
+
+      .cblock.is-selected {
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 35%, transparent);
+      }
+
+      .cblock__icon {
+        color: var(--color-accent);
+        flex: none;
+      }
+
+      .cblock__label {
+        overflow: hidden;
+        color: var(--color-muted);
+      }
+
+      .cblock__handle {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 8px;
+        cursor: ew-resize;
+        background: linear-gradient(
+          to right,
+          transparent,
+          color-mix(in srgb, var(--color-accent) 25%, transparent)
+        );
+      }
+
+      .cblock__handle--s {
+        right: 0;
+        left: 0;
+        top: auto;
+        bottom: 0;
+        width: auto;
+        height: 8px;
+        cursor: ns-resize;
+        background: linear-gradient(
+          to bottom,
+          transparent,
+          color-mix(in srgb, var(--color-accent) 25%, transparent)
+        );
+      }
+
+      /* --- inspector --- */
+      .inspector {
+        position: fixed;
+        right: 1rem;
+        top: 5rem;
+        width: 260px;
+        max-height: 75vh;
+        overflow-y: auto;
+        z-index: 45;
+        padding: 0.9rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      }
+
+      .inspector h2 {
+        margin: 0 0 0.6rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--color-muted);
+      }
+
+      .insp__row {
+        display: block;
+        margin-bottom: 0.6rem;
+        font-size: 0.8rem;
+      }
+
+      .insp__row span {
+        display: block;
+        margin-bottom: 0.2rem;
+        color: var(--color-muted);
+      }
+
+      .insp__row input,
+      .insp__row select,
+      .insp__row textarea {
+        width: 100%;
+        font: inherit;
+        font-size: 0.85rem;
+        padding: 0.35rem 0.45rem;
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        background: var(--color-bg);
+        color: var(--color-text);
+      }
+
+      .insp__remove {
+        width: 100%;
+        margin-top: 0.4rem;
+        padding: 0.4rem;
+        font: inherit;
+        font-size: 0.8rem;
+        border: 1px solid var(--color-warning-line);
+        border-radius: 6px;
+        background: var(--color-warning-bg);
+        color: var(--color-warning-line);
+        cursor: pointer;
+      }
+    </style>
+  </body>
+</html>
