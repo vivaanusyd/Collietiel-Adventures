@@ -8,6 +8,24 @@
   --color-muted: #6b6258;
   --color-accent: #c2452c;
   --color-border: #e5ddd0;
+
+  /* Cards and anything that should sit ON the background rather than in it.
+     Exists because .review-card used to hardcode #fff, which is invisible
+     as a distinction on a light background and actively wrong on a dark
+     one. Every raised surface should name this, not a literal colour. */
+  --color-surface: #ffffff;
+
+  /* Translucent white behind the badge on a photo. A variable because it
+     has to flip to translucent BLACK in dark mode — a white disc over a
+     dark page glows. */
+  --color-scrim: rgba(255, 255, 255, 0.94);
+
+  /* Callouts: draft banners and the dev-only editor note. */
+  --color-warning-bg: #fdecea;
+  --color-warning-line: #b3261e;
+  --color-note-bg: #fff8e6;
+  --color-note-line: #d09a1e;
+
   --radius: 10px;
   --max-width: 1100px;
 
@@ -25,6 +43,38 @@
      keep them sitting on the baseline. Set in em so they track font size. */
   --emotion-icon-size: 1.35em;
   --emotion-icon-nudge: -0.3em;
+}
+
+/* Dark mode follows the reader's OS setting. No toggle: a toggle needs
+   somewhere to remember the choice, which means either a cookie (the footer
+   currently promises there are none) or a flash of the wrong theme on every
+   page load while JavaScript decides. Respecting the system preference is
+   free, silent, and already what most readers expect.
+
+   Only the palette is redeclared — every rule below reads these variables,
+   so nothing else in the stylesheet needs a dark-mode branch. That's the
+   payoff for blocks naming palette slots instead of literal colours. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Warm near-black rather than pure #000: the light theme is warm, and
+       pure black against white text is harsh at night, which is when this
+       theme gets used. */
+    --color-bg: #17140f;
+    --color-text: #ece7dd;
+    --color-muted: #a4988a;
+    --color-border: #35302a;
+    --color-surface: #211d18;
+    --color-scrim: rgba(0, 0, 0, 0.6);
+
+    /* The light-mode red fails contrast against a dark background, so it
+       lifts rather than staying "the brand colour" and being unreadable. */
+    --color-accent: #f0785d;
+
+    --color-warning-bg: #3a1d1a;
+    --color-warning-line: #e5645a;
+    --color-note-bg: #322a16;
+    --color-note-line: #d09a1e;
+  }
 }
 
 * {
@@ -146,8 +196,8 @@ img {
 
 /* Dev-only editorial callout — see index.astro. */
 .editor-note {
-  background: #fff8e6;
-  border-left: 4px solid #d09a1e;
+  background: var(--color-note-bg);
+  border-left: 4px solid var(--color-note-line);
   padding: 0.6rem 0.9rem;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -163,3 +213,31 @@ img {
 .site-footer p {
   margin: 0;
 }
+
+/* Some readers set "reduce motion" because movement makes them ill —
+   vestibular disorders make transforms and sliding elements genuinely
+   nauseating, not merely annoying. So this turns animation off rather than
+   speeding it up.
+
+   Written as a near-zero duration instead of `none`, because transitionend
+   and animationend listeners still need to fire; `animation: none` silently
+   breaks any script waiting on one. The `!important` is deliberate — this
+   has to beat component-scoped styles, which is the whole point of a
+   preference override. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Note: rules above only stop things from ANIMATING. A hover transform still
+   jumps to its end state instantly, so anything that MOVES has to opt out
+   where it's defined — see the matching block in ReviewCard.astro. It lives
+   there rather than here because these components use Astro's scoped styles,
+   and a same-specificity override from this file would depend on stylesheet
+   order to win. */

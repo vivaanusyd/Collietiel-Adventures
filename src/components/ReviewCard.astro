@@ -62,7 +62,7 @@ const label = reactionLabel(reaction);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     overflow: hidden;
-    background: #fff;
+    background: var(--color-surface);
     transition:
       transform 0.1s ease,
       box-shadow 0.1s ease;
@@ -71,6 +71,16 @@ const label = reactionLabel(reaction);
   .review-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Turning off the transition (global.css does that) only stops the lift
+     from being animated — it still jumps 2px instantly. For a reader who
+     gets motion sick, an instant jump is the worse of the two, so the
+     movement is removed entirely. The shadow still signals hover. */
+  @media (prefers-reduced-motion: reduce) {
+    .review-card:hover {
+      transform: none;
+    }
   }
 
   .review-card__media {
@@ -102,7 +112,7 @@ const label = reactionLabel(reaction);
     height: 44px;
     display: grid;
     place-items: center;
-    background: rgba(255, 255, 255, 0.94);
+    background: var(--color-scrim);
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }

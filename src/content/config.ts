@@ -1,6 +1,7 @@
 import { defineCollection, z } from 'astro:content';
 import { REACTION_KEYS } from '../lib/reactions';
 import { blockSchema } from '../lib/blocks';
+import { publicFileExists } from '../lib/public-files.mjs';
 
 // The contract between the WRITING side and the READING side of this site.
 // Everything a review needs to be publishable is declared here, and zod
@@ -138,6 +139,36 @@ const reviews = defineCollection({
             `blurb must be at least 20 characters to publish (got ${data.blurb.trim().length}). ` +
             `Either write one, or set \`draft: true\` while you finish it.`,
         });
+      }
+
+      // Files under public/ bypass Vite's asset pipeline entirely, so
+      // nothing else verifies they exist — a typo'd filename builds clean
+      // and ships a broken image that only a reader finds. Same check
+      // src/lib/icons.mjs does for icons, applied to photos.
+      //
+      // Covers both the cover photo and every image inside a block, because
+      // a writer renaming a file in the repo breaks them identically.
+      const imagePaths: [string, (string | number)[]][] = [];
+      if (data.cover) imagePaths.push([data.cover, ['cover']]);
+
+      data.blocks?.forEach((block, i) => {
+        if (block.type === 'image' || block.type === 'annotated') {
+          imagePaths.push([block.src, ['blocks', i, 'src']]);
+        } else if (block.type === 'gallery') {
+          block.images.forEach((image, j) => {
+            imagePaths.push([image.src, ['blocks', i, 'images', j, 'src']]);
+          });
+        }
+      });
+
+      for (const [imagePath, path] of imagePaths) {
+        if (!publicFileExists(imagePath)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path,
+            message: `no such file: public${imagePath} — check the filename, or re-upload the image.`,
+          });
+        }
       }
 
       // Hotspots are positioned as percentages of the cover photo, so
