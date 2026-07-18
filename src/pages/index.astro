@@ -2,12 +2,13 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ReviewCard from '../components/ReviewCard.astro';
 import { getPublishedReviews } from '../lib/reviews';
+import { siteTitle } from '../lib/site';
 
 const reviews = await getPublishedReviews();
 const draftCount = reviews.filter((r) => r.data.draft).length;
 ---
 
-<BaseLayout title="The Blog — restaurant reviews" description="A small restaurant review blog.">
+<BaseLayout title={siteTitle()}>
   <h1>Reviews</h1>
 
   {/* Dev-only editor's note. import.meta.env.DEV is false in a production

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { SITE } from '../lib/site';
 
 interface Props {
   title: string;
@@ -11,7 +12,7 @@ interface Props {
 
 const {
   title,
-  description = 'A small restaurant review blog.',
+  description = SITE.description,
   image,
   type = 'website',
 } = Astro.props;
@@ -51,7 +52,7 @@ const ogImage = image && Astro.site ? new URL(image, Astro.site).href : undefine
     <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
 
     <!-- Lets browsers and feed readers auto-discover the RSS feed. -->
-    <link rel="alternate" type="application/rss+xml" title="The Blog" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
 
     <!--
       ANALYTICS SLOT — intentionally empty. Paste your provider's snippet
@@ -66,7 +67,7 @@ const ogImage = image && Astro.site ? new URL(image, Astro.site).href : undefine
 
     <nav class="site-nav">
       <div class="container">
-        <a class="brand" href="/">🍽️ The Blog</a>
+        <a class="brand" href="/">{SITE.mark} {SITE.name}</a>
         <div class="links">
           <a href="/">Home</a>
           <a href="/map">Map</a>

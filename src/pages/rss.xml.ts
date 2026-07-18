@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getPublishedReviews, starString } from '../lib/reviews';
+import { SITE, siteTitle } from '../lib/site';
 
 // Hand-rolled rather than pulling in @astrojs/rss — the whole feed is one
 // template string, and the only genuinely tricky part (escaping) is the
@@ -38,13 +39,25 @@ export const GET: APIRoute = async ({ site }) => {
     })
     .join('\n');
 
+  const feedUrl = new URL('/rss.xml', base).href;
+
+  // Newest review's date, or now if there are none. Feed readers use this to
+  // decide whether anything changed before re-downloading every item.
+  const lastBuild = reviews[0]?.data.date ?? new Date();
+
+  // The atom:link self-reference is the one thing RSS 2.0 validators reliably
+  // complain about when it's missing. It tells a reader the feed's canonical
+  // address, so a feed that gets mirrored or moved can still be traced back.
+  // It's from the Atom spec, hence the extra namespace on <rss>.
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>The Blog — restaurant reviews</title>
+    <title>${esc(siteTitle())}</title>
     <link>${esc(base.href)}</link>
-    <description>A small restaurant review blog.</description>
+    <atom:link href="${esc(feedUrl)}" rel="self" type="application/rss+xml" />
+    <description>${esc(SITE.description)}</description>
     <language>en-au</language>
+    <lastBuildDate>${lastBuild.toUTCString()}</lastBuildDate>
 ${items}
   </channel>
 </rss>

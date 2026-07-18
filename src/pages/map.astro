@@ -1,9 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Map from '../components/Map.astro';
+import { pageTitle } from '../lib/site';
 ---
 
-<BaseLayout title="Map — The Blog" description="Every reviewed restaurant, pinned on a map.">
+<BaseLayout title={pageTitle('Map')} description="Every reviewed restaurant, pinned on a map.">
   <h1>Map</h1>
   <p>Click a pin for a quick look, or the link inside for the full review.</p>
   <Map />

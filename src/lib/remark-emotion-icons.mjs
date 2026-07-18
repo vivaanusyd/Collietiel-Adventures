@@ -73,9 +73,13 @@ function splitTextNode(node, filePath) {
     if (match.index > last) {
       out.push({ type: 'text', value: value.slice(last, match.index) });
     }
+    // width/height are the artwork's intrinsic size (every icon is 128x128).
+    // CSS still controls the rendered size in `em` — these attributes only
+    // hand the browser the aspect ratio up front, so a line of text doesn't
+    // reflow sideways as each icon finishes loading.
     out.push({
       type: 'html',
-      value: `<img class="emotion-icon" src="/icons/${name}.png" alt="${escapeAttr(EMOTIONS[name])}" />`,
+      value: `<img class="emotion-icon" src="/icons/${name}.png" alt="${escapeAttr(EMOTIONS[name])}" width="128" height="128" />`,
     });
     last = match.index + full.length;
   }

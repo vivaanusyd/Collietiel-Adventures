@@ -5,6 +5,6 @@ User-agent: *
 Allow: /
 
 # Absolute URL is required here — the sitemap directive is the one place
-# robots.txt doesn't accept a relative path. Update this the moment you set
-# a real `site:` in astro.config.mjs, or you'll point Google at example.com.
-Sitemap: https://example.com/sitemap.xml
+# robots.txt doesn't accept a relative path. Keep it in step with `site:` in
+# astro.config.mjs; those two are the only places the domain is written down.
+Sitemap: https://collietiel-adventures.netlify.app/sitemap.xml

@@ -9,11 +9,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ReviewCard from '../components/ReviewCard.astro';
 import { getPublishedReviews } from '../lib/reviews';
+import { pageTitle } from '../lib/site';
 
 const recent = (await getPublishedReviews()).slice(0, 3);
 ---
 
-<BaseLayout title="Not found — The Blog" description="That page doesn't exist.">
+<BaseLayout title={pageTitle('Not found')} description="That page doesn't exist.">
   <h1>Not found</h1>
 
   <p class="not-found-lead">

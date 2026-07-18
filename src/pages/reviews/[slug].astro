@@ -4,6 +4,7 @@ import ImageCaption from '../../components/ImageCaption.astro';
 import Icon from '../../components/Icon.astro';
 import { reactionLabel } from '../../lib/reactions';
 import { getPublishedReviews, readingTimeMinutes, starString, type Review } from '../../lib/reviews';
+import { pageTitle } from '../../lib/site';
 
 export async function getStaticPaths() {
   // Same helper as everywhere else, so a draft gets a previewable page in
@@ -33,7 +34,7 @@ const fmt = (d: Date) =>
 ---
 
 <BaseLayout
-  title={`${name} — The Blog`}
+  title={pageTitle(name)}
   description={review.data.blurb}
   image={cover}
   type="article"
