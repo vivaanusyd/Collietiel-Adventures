@@ -1,0 +1,269 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { pageTitle } from '../lib/site';
+
+// Client-side search over /search-index.json.
+//
+// Works without JavaScript to the extent that anything can: the page
+// renders, explains itself, and links to the full list. It can't actually
+// search without JS, and there's no server to fall back to — that's the
+// honest cost of a static site, not something to paper over with a form
+// that posts nowhere.
+---
+
+<BaseLayout
+  title={pageTitle('Search')}
+  description="Search every restaurant review by name, cuisine or suburb."
+>
+  <h1>Search</h1>
+
+  <form class="search" role="search" onsubmit="return false">
+    <label class="search__label" for="q">Search reviews</label>
+    <input
+      type="search"
+      id="q"
+      name="q"
+      class="search__input"
+      placeholder="Restaurant, cuisine, or suburb…"
+      autocomplete="off"
+      autofocus
+    />
+  </form>
+
+  <p class="search__status" role="status" aria-live="polite"></p>
+
+  <div class="card-grid search__results"></div>
+
+  <noscript>
+    <p>Search needs JavaScript. You can still <a href="/">browse every review</a>.</p>
+  </noscript>
+</BaseLayout>
+
+<script>
+  import { searchEntries } from '../lib/search.mjs';
+
+  interface Entry {
+    slug: string;
+    name: string;
+    cuisine: string;
+    address: string;
+    blurb: string;
+    stars: string;
+    rating: number;
+    cover: string | null;
+  }
+
+  const input = document.getElementById('q') as HTMLInputElement | null;
+  const results = document.querySelector('.search__results') as HTMLElement | null;
+  const status = document.querySelector('.search__status') as HTMLElement | null;
+
+  if (input && results && status) {
+    // Rebound inside the guard. TypeScript's narrowing of the outer `let`
+    // bindings doesn't survive into the nested functions below — it can't
+    // prove they're still non-null by the time a callback runs — so these
+    // consts carry the narrowing in rather than sprinkling `!` around.
+    const resultsEl = results;
+    const statusEl = status;
+
+    let index: Entry[] | null = null;
+    let loading: Promise<Entry[]> | null = null;
+
+    // Fetched on first interaction, not on page load: most people who open
+    // this page are about to type, but the ones who landed here by accident
+    // shouldn't pay for the index.
+    function loadIndex(): Promise<Entry[]> {
+      loading ??= fetch('/search-index.json')
+        .then((r) => r.json())
+        .then((data: Entry[]) => (index = data));
+      return loading;
+    }
+
+    function render(query: string) {
+      if (!index) return;
+
+      // An empty box is not a failed search — clear everything rather than
+      // telling someone nothing matches the nothing they typed.
+      if (query.trim() === '') {
+        resultsEl.replaceChildren();
+        statusEl.textContent = '';
+        return;
+      }
+
+      // Ranking lives in src/lib/search.mjs so it can be unit-tested —
+      // see test/search.test.mjs for why that matters here.
+      const matches = searchEntries(index, query);
+
+      statusEl.textContent = matches.length
+        ? `${matches.length} ${matches.length === 1 ? 'review' : 'reviews'}`
+        : `Nothing matches "${query}".`;
+
+      // Built with DOM methods rather than an innerHTML template, so a
+      // restaurant name containing < or & can't inject markup into the page.
+      resultsEl.replaceChildren(
+        ...matches.map((entry) => {
+          const card = document.createElement('a');
+          card.className = 'review-card search-card';
+          card.href = `/reviews/${entry.slug}`;
+
+          if (entry.cover) {
+            const img = document.createElement('img');
+            img.className = 'search-card__img';
+            img.src = entry.cover;
+            img.alt = '';
+            img.loading = 'lazy';
+            card.append(img);
+          }
+
+          const body = document.createElement('div');
+          body.className = 'search-card__body';
+
+          if (entry.cuisine) {
+            const cuisine = document.createElement('span');
+            cuisine.className = 'search-card__cuisine';
+            cuisine.textContent = entry.cuisine;
+            body.append(cuisine);
+          }
+
+          const title = document.createElement('h2');
+          title.className = 'search-card__name';
+          title.textContent = entry.name;
+
+          const stars = document.createElement('p');
+          stars.className = 'search-card__stars';
+          stars.textContent = entry.stars;
+
+          const blurb = document.createElement('p');
+          blurb.className = 'search-card__blurb';
+          blurb.textContent = entry.blurb;
+
+          body.append(title, stars, blurb);
+          card.append(body);
+          return card;
+        })
+      );
+    }
+
+    // Debounced, because rendering on every keystroke of a fast typist is
+    // wasted work — but short enough to still feel immediate.
+    let timer: number | undefined;
+    input.addEventListener('input', () => {
+      const query = input.value;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        loadIndex().then(() => render(query));
+      }, 120);
+    });
+
+    // Deep-linkable: /search?q=noodles works, so a result can be shared.
+    const initial = new URLSearchParams(location.search).get('q');
+    if (initial) {
+      input.value = initial;
+      loadIndex().then(() => render(initial));
+    }
+
+    // Keep the URL in step without adding a history entry per keystroke.
+    input.addEventListener('change', () => {
+      const url = new URL(location.href);
+      if (input.value) url.searchParams.set('q', input.value);
+      else url.searchParams.delete('q');
+      history.replaceState(null, '', url);
+    });
+  }
+</script>
+
+<style>
+  .search {
+    margin: 1rem 0 0.5rem;
+    max-width: 34rem;
+  }
+
+  /* Visually hidden, still announced. The placeholder is not a label — it
+     disappears the moment someone types, and screen readers treat it
+     inconsistently. */
+  .search__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .search__input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    font: inherit;
+    font-size: 1.05rem;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  .search__input:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+
+  .search__status {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    min-height: 1.4em;
+    margin: 0 0 1rem;
+  }
+
+  .search__results:empty {
+    display: none;
+  }
+</style>
+
+<style is:global>
+  /* Global, because these cards are created by the script above and so sit
+     outside this component's scoped-style boundary. */
+  .search-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--color-surface);
+  }
+
+  .search-card__img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+
+  .search-card__body {
+    padding: 0.8rem 0.9rem 1rem;
+  }
+
+  .search-card__cuisine {
+    display: inline-block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-muted);
+    margin-bottom: 0.3rem;
+  }
+
+  .search-card__name {
+    margin: 0 0 0.2rem;
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .search-card__stars {
+    margin: 0 0 0.35rem;
+    color: var(--color-accent);
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+  }
+
+  .search-card__blurb {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+</style>

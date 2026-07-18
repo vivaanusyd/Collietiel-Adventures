@@ -92,6 +92,42 @@ export async function getCuisines(): Promise<{ slug: string; label: string; revi
 }
 
 /**
+ * Reviews to show at the end of `review`, best match first.
+ *
+ * Ranked rather than random, because "related" that isn't actually related
+ * trains readers to ignore the section. Same cuisine is the strongest
+ * signal a reader-facing site has here; a close rating is a weak
+ * tiebreaker (someone who liked a 5 is more likely to want another 5 than a
+ * 1); recency breaks the rest.
+ *
+ * Always returns up to `limit`, padding with recent reviews if too few
+ * share a cuisine — an empty "related" block looks broken, and a merely
+ * unrelated suggestion is better than a hole in the page.
+ */
+export async function getRelatedReviews(review: Review, limit = 3): Promise<Review[]> {
+  const all = await getPublishedReviews();
+  const candidates = all.filter((r) => r.slug !== review.slug);
+
+  const slug = review.data.cuisine ? cuisineSlug(review.data.cuisine) : null;
+
+  const scored = candidates.map((r) => {
+    let score = 0;
+    if (slug && r.data.cuisine && cuisineSlug(r.data.cuisine) === slug) score += 10;
+    // Rating proximity: 4 points for identical, sliding to 0 for opposite.
+    score += Math.max(0, 4 - Math.abs(r.data.rating - review.data.rating));
+    return { review: r, score };
+  });
+
+  return scored
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return b.review.data.date.valueOf() - a.review.data.date.valueOf();
+    })
+    .slice(0, limit)
+    .map((s) => s.review);
+}
+
+/**
  * Where a review's pin goes, from either accepted spelling.
  *
  * The CMS map picker writes stringified GeoJSON to `location`; a file

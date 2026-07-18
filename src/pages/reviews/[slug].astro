@@ -5,9 +5,11 @@ import Blocks from '../../components/Blocks.astro';
 import ReviewSchema from '../../components/ReviewSchema.astro';
 import Icon from '../../components/Icon.astro';
 import { reactionLabel } from '../../lib/reactions';
+import ReviewCard from '../../components/ReviewCard.astro';
 import {
   cuisineSlug,
   getPublishedReviews,
+  getRelatedReviews,
   readingTimeMinutes,
   starString,
   type Review,
@@ -65,6 +67,8 @@ const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).href :
 // 1200px is what the major platforms render a large card at.
 const ogImagePath = cover ? imageUrl(cover, 1200) : undefined;
 const coverUrl = ogImagePath && Astro.site ? new URL(ogImagePath, Astro.site).href : undefined;
+
+const related = await getRelatedReviews(review, 3);
 
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -157,6 +161,19 @@ const fmt = (d: Date) =>
     <Content />
     {blocks && blocks.length > 0 && <Blocks blocks={blocks} />}
   </article>
+
+  {
+    related.length > 0 && (
+      <section class="related">
+        <h2>More like this</h2>
+        <div class="card-grid">
+          {related.map((r) => (
+            <ReviewCard review={r} />
+          ))}
+        </div>
+      </section>
+    )
+  }
 </BaseLayout>
 
 <style>
@@ -187,5 +204,15 @@ const fmt = (d: Date) =>
     max-width: 65ch;
     line-height: 1.7;
     margin-top: 1.5rem;
+  }
+
+  .related {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .related h2 {
+    margin-top: 0;
   }
 </style>

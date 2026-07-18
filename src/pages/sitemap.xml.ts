@@ -15,7 +15,7 @@ import { escapeXml } from '../lib/xml';
 // /admin/ is deliberately absent: it's the editor, it's marked noindex, and
 // listing it would be asking search engines to crawl an app that requires a
 // GitHub login to do anything.
-const STATIC_PATHS = ['/', '/map', '/about'];
+const STATIC_PATHS = ['/', '/map', '/search', '/about'];
 
 export const GET: APIRoute = async ({ site }) => {
   const base = site ?? new URL('https://example.com');
