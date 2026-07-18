@@ -4,20 +4,31 @@
 // job is to fetch every review from the content collection and hand it to
 // that script as JSON — that's the whole mechanism behind "new review =
 // new pin", nothing else to wire up.
-import { getPublishedReviews, starString } from '../lib/reviews';
+import { getPublishedReviews, reviewCoords, starString } from '../lib/reviews';
 
 // Goes through the shared helper, not getCollection — so drafts are hidden
 // here on exactly the same terms as everywhere else. See src/lib/reviews.ts.
 const reviews = await getPublishedReviews();
-const pins = reviews.map((r) => ({
-  slug: r.slug,
-  name: r.data.name,
-  lat: r.data.lat,
-  lng: r.data.lng,
-  stars: starString(r.data.rating),
-  cover: r.data.cover,
-  blurb: r.data.blurb,
-}));
+
+// Coordinates come from reviewCoords() because a review may carry them as
+// either a CMS-written GeoJSON `location` or hand-written lat/lng. A review
+// whose coordinates don't parse is dropped from the map rather than pinned
+// at [0,0] in the Atlantic — reviewCoords() has already warned about it.
+const pins = reviews.flatMap((r) => {
+  const coords = reviewCoords(r);
+  if (!coords) return [];
+  return [
+    {
+      slug: r.slug,
+      name: r.data.name,
+      lat: coords.lat,
+      lng: coords.lng,
+      stars: starString(r.data.rating),
+      cover: r.data.cover,
+      blurb: r.data.blurb,
+    },
+  ];
+});
 ---
 
 <div id="map" class="review-map"></div>
@@ -63,7 +74,7 @@ const pins = reviews.map((r) => ({
     lat: number;
     lng: number;
     stars: string;
-    cover: string;
+    cover?: string;
     blurb: string;
   }
 
@@ -88,10 +99,6 @@ const pins = reviews.map((r) => ({
       const popup = document.createElement('div');
       popup.className = 'map-popup';
 
-      const img = document.createElement('img');
-      img.src = pin.cover;
-      img.alt = pin.name;
-
       const title = document.createElement('strong');
       title.textContent = pin.name;
 
@@ -106,7 +113,16 @@ const pins = reviews.map((r) => ({
       link.href = `/reviews/${pin.slug}`;
       link.textContent = 'Read full review →';
 
-      popup.append(img, title, stars, blurb, link);
+      // Cover is optional, so the popup is assembled from whatever exists
+      // rather than always leading with an <img> that may have no src.
+      if (pin.cover) {
+        const img = document.createElement('img');
+        img.src = pin.cover;
+        img.alt = pin.name;
+        popup.append(img);
+      }
+
+      popup.append(title, stars, blurb, link);
 
       L.marker([pin.lat, pin.lng]).addTo(map).bindPopup(popup);
     }

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Keep the editor out of search results. It's not secret — the whole
+         repo is public and the CMS is useless without a GitHub login — but
+         there's no reason for it to appear in anyone's search results. -->
+    <meta name="robots" content="noindex" />
+    <title>Write a review — Collietiel Adventures</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <!--
+      THERE IS NO PASSWORD ON THIS PAGE, DELIBERATELY.
+
+      A static site has no server to check a password against, so any
+      password checked in the page ships its own answer to the browser in
+      plain text — view-source is enough to defeat it. That isn't weak
+      security, it's decorative, and it's worse than none because it looks
+      like protection.
+
+      Instead: signing in goes to GitHub, GitHub checks the account against
+      the repository's collaborator list, and the token comes back from a
+      Netlify Function that holds the client secret server-side. The
+      permission check happens on GitHub's machines, against real accounts,
+      where it can't be bypassed by reading the page source.
+
+      Access is granted and revoked in one place — the repo's Settings →
+      Collaborators. Write access means a writer can open a pull request;
+      admin means they can merge it.
+    -->
+    <script src="https://unpkg.com/@sveltia/cms@0/dist/sveltia-cms.js"></script>
+
+    <script>
+      // Everything below is progressive enhancement layered on top of the
+      // CMS: if any of it throws, the editor still works, it just loses the
+      // emotion palette or the preview styling.
+      window.addEventListener('load', () => {
+        if (!window.CMS) return;
+
+        // --- live preview uses the REAL stylesheet -------------------------
+        //
+        // preview.css is generated from src/styles/global.css by
+        // scripts/sync-preview-css.mjs on every build, so the preview pane
+        // can't drift from the live site. Copying the palette by hand here
+        // would have been two sources of truth for the same colours.
+        try {
+          CMS.registerPreviewStyle('/admin/preview.css');
+        } catch (err) {
+          console.warn('[admin] preview styles failed to load', err);
+        }
+
+        // --- emotion icon palette ----------------------------------------
+        //
+        // The emotion icons are the site's main expressive tool, and writers
+        // should not have to memorise `:collie-smiling:` to use one. What
+        // this SHOULD be is a picker inside the rich text toolbar showing the
+        // pictures. That needs Sveltia's custom widget API
+        // (registerFieldType), which is documented but not implemented yet —
+        // it's on the 1.0 milestone.
+        //
+        // So this is the honest stand-in: a palette of the actual artwork,
+        // pinned to the corner of the editor. Click a face and it's inserted
+        // at the cursor in whatever text box you were last typing in; if the
+        // browser won't allow that, it falls back to copying the shortcode so
+        // you can paste it. Either way nobody has to remember the syntax or
+        // the spelling.
+        buildEmotionPalette();
+      });
+
+      const EMOTIONS = [
+        ['collie-smiling', 'This is good, straightforwardly'],
+        ['collie-delighted', 'Outstanding — the reason to come here'],
+        ['collie-hopeful', 'Would come back, want more of this'],
+        ['collie-sleepy', 'Cosy, unhurried, comfortable'],
+        ['cockatiel-shocked', 'Sticker shock, tiny portions, an absurd bill'],
+        ['cockatiel-unimpressed', 'Bland, forgettable, phoned in'],
+        ['cockatiel-suspicious', "Something's off — proceed carefully"],
+      ];
+
+      function buildEmotionPalette() {
+        const root = document.createElement('div');
+        root.className = 'emotion-palette';
+        root.innerHTML = `
+          <button type="button" class="emotion-palette__toggle" aria-expanded="false">
+            <img src="/icons/collie-smiling.png" alt="" width="24" height="24" />
+            <span>Emotion icons</span>
+          </button>
+          <div class="emotion-palette__panel" hidden>
+            <p class="emotion-palette__intro">
+              Click one to drop it into the text you're editing. Use them as
+              punctuation, mid-sentence — they lose their force if every line
+              has one.
+            </p>
+            <div class="emotion-palette__grid"></div>
+            <p class="emotion-palette__status" role="status" aria-live="polite"></p>
+          </div>`;
+
+        const grid = root.querySelector('.emotion-palette__grid');
+        const status = root.querySelector('.emotion-palette__status');
+
+        for (const [name, meaning] of EMOTIONS) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'emotion-palette__item';
+          button.title = meaning;
+          button.innerHTML =
+            `<img src="/icons/${name}.png" alt="" width="32" height="32" />` +
+            `<span>${meaning}</span>`;
+          // mousedown, not click: clicking moves focus out of the text box,
+          // and preventDefault on mousedown is what stops that happening —
+          // otherwise there's no cursor left to insert at.
+          button.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+            insertShortcode(`:${name}:`, status);
+          });
+          grid.append(button);
+        }
+
+        const toggle = root.querySelector('.emotion-palette__toggle');
+        const panel = root.querySelector('.emotion-palette__panel');
+        toggle.addEventListener('click', () => {
+          const open = panel.hasAttribute('hidden');
+          panel.toggleAttribute('hidden', !open);
+          toggle.setAttribute('aria-expanded', String(open));
+        });
+
+        document.body.append(root);
+      }
+
+      /**
+       * Insert text at the cursor of whatever the writer was last editing.
+       *
+       * Two shapes to handle, because the CMS uses both: plain <textarea>
+       * / <input> for simple fields, and a contenteditable for rich text.
+       * If neither is focused — or the browser blocks the insert — fall
+       * back to the clipboard and say so, rather than silently doing
+       * nothing.
+       */
+      function insertShortcode(shortcode, status) {
+        const el = document.activeElement;
+
+        const isTextField =
+          el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'));
+
+        if (isTextField) {
+          const { selectionStart: start, selectionEnd: end, value } = el;
+          el.value = value.slice(0, start) + shortcode + value.slice(end);
+          el.selectionStart = el.selectionEnd = start + shortcode.length;
+          // The CMS listens for input events to know the field changed. A
+          // direct .value assignment doesn't fire one, so without this the
+          // icon appears on screen and is silently missing when saved.
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          say(status, 'Added.');
+          return;
+        }
+
+        if (el && el.isContentEditable) {
+          // Deprecated but still the only thing that inserts into a
+          // contenteditable while keeping the editor's own undo stack
+          // intact. If it's ever removed, this falls through to the
+          // clipboard branch below on its own.
+          const ok = document.execCommand('insertText', false, shortcode);
+          if (ok) {
+            say(status, 'Added.');
+            return;
+          }
+        }
+
+        navigator.clipboard?.writeText(shortcode).then(
+          () => say(status, `Copied ${shortcode} — paste it where you want it.`),
+          () => say(status, `Type ${shortcode} where you want it.`)
+        );
+      }
+
+      function say(status, message) {
+        status.textContent = message;
+        clearTimeout(say.timer);
+        say.timer = setTimeout(() => (status.textContent = ''), 4000);
+      }
+    </script>
+
+    <style>
+      .emotion-palette {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 9999;
+        font:
+          14px/1.4 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
+
+      .emotion-palette__toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+        padding: 0.5rem 0.85rem;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 999px;
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .emotion-palette__panel {
+        width: 280px;
+        margin-top: 0.5rem;
+        padding: 0.85rem;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+      }
+
+      .emotion-palette__intro {
+        margin: 0 0 0.6rem;
+        font-size: 12px;
+        color: #555;
+      }
+
+      .emotion-palette__grid {
+        display: grid;
+        gap: 0.25rem;
+      }
+
+      .emotion-palette__item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.35rem 0.4rem;
+        border: none;
+        border-radius: 6px;
+        background: none;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        font-size: 12px;
+        color: #333;
+      }
+
+      .emotion-palette__item:hover,
+      .emotion-palette__item:focus-visible {
+        background: #f2efe9;
+      }
+
+      .emotion-palette__item img {
+        flex: none;
+      }
+
+      .emotion-palette__status {
+        margin: 0.5rem 0 0;
+        min-height: 1.2em;
+        font-size: 12px;
+        color: #1a7f37;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .emotion-palette__toggle,
+        .emotion-palette__panel {
+          background: #22262b;
+          border-color: rgba(255, 255, 255, 0.15);
+          color: #e8e6e3;
+        }
+        .emotion-palette__item {
+          color: #e8e6e3;
+        }
+        .emotion-palette__item:hover,
+        .emotion-palette__item:focus-visible {
+          background: #2e343b;
+        }
+        .emotion-palette__intro {
+          color: #aaa;
+        }
+      }
+    </style>
+  </body>
+</html>

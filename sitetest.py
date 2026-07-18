@@ -95,6 +95,21 @@ if not pages:
 
 note("%d HTML pages built" % len(pages))
 
+# Pages marked noindex are APPLICATIONS, not content — the CMS at /admin/ is
+# the one that exists today. They're deliberately absent from search, so
+# canonical URLs, Open Graph tags and a sitemap entry would all be wrong to
+# demand: an og:description on the editor would describe it to a social
+# scraper that is never meant to see it. Link and image checks below still
+# cover them, because a broken link is a broken link.
+content_pages = {
+    path: p
+    for path, p in pages.items()
+    if "noindex" not in p.metas.get("robots", "").lower()
+}
+
+if len(content_pages) != len(pages):
+    note("%d noindex page(s) skipped for SEO checks" % (len(pages) - len(content_pages)))
+
 
 def resolves(url):
     """Does an internal URL map to a real file in dist?"""
@@ -135,7 +150,7 @@ for page, p in sorted(pages.items()):
                 warn("perf", "%s -> <img %s> has no width/height and no container reserving space" % (page, src))
 
 # ---------- 3. canonical / meta ----------
-for page, p in sorted(pages.items()):
+for page, p in sorted(content_pages.items()):
     can = p.links_rel.get("canonical", [None])[0]
     if not can:
         fail("seo", "%s -> no canonical URL" % page)
@@ -155,7 +170,7 @@ for page, p in sorted(pages.items()):
 
 # duplicate titles
 seen = {}
-for page, p in pages.items():
+for page, p in content_pages.items():
     t = (p.title or "").strip()
     seen.setdefault(t, []).append(page)
 for t, ps in seen.items():
@@ -163,7 +178,7 @@ for t, ps in seen.items():
         warn("seo", "duplicate <title> %r on: %s" % (t, ", ".join(sorted(ps))))
 
 # ---------- 4. headings ----------
-for page, p in sorted(pages.items()):
+for page, p in sorted(content_pages.items()):
     hs = [lvl for lvl, _ in p.headings]
     n1 = hs.count(1)
     if n1 == 0:
@@ -265,8 +280,8 @@ else:
                 fail("sitemap", "%s still points at example.com" % loc)
             if resolves(loc) is False:
                 fail("sitemap", "%s does not resolve to a built page" % loc)
-        # every page in dist should be in the sitemap (except 404)
-        for page in pages:
+        # every content page in dist should be in the sitemap (except 404)
+        for page in content_pages:
             path = page.replace("/index.html", "/").replace(".html", "")
             if page == "/404.html":
                 continue

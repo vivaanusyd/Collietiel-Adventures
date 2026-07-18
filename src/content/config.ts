@@ -11,8 +11,27 @@ const reviews = defineCollection({
   schema: z
     .object({
       name: z.string(),
-      lat: z.number().min(-90).max(90),
-      lng: z.number().min(-180).max(180),
+
+      // WHERE THE RESTAURANT IS — two accepted spellings, exactly one
+      // required (enforced in the superRefine below).
+      //
+      //   location: '{"type":"Point","coordinates":[151.1957,-33.8908]}'
+      //   lat: -33.8908 / lng: 151.1957
+      //
+      // `location` is stringified GeoJSON, which is what the CMS map picker
+      // writes when a writer drags a pin or searches an address — the whole
+      // point being that nobody has to type a coordinate. Note GeoJSON is
+      // [LONGITUDE, LATITUDE], which is the reverse of how everyone says it
+      // out loud, and the single most likely thing to get wrong here.
+      //
+      // lat/lng stay supported because they're what a person writing a file
+      // by hand will reach for, and because every existing review uses them.
+      // Read them through reviewCoords() in src/lib/reviews.ts rather than
+      // touching either field directly.
+      location: z.string().optional(),
+      lat: z.number().min(-90).max(90).optional(),
+      lng: z.number().min(-180).max(180).optional(),
+
       rating: z.number().int().min(1).max(5),
       date: z.date(),
 
@@ -90,6 +109,20 @@ const reviews = defineCollection({
     // they depend on `draft` — which is the point: a draft is allowed to be
     // incomplete, a published review is not.
     .superRefine((data, ctx) => {
+      // Exactly one spelling of the coordinates must be present. Without
+      // this, a review missing both would build fine and then simply not
+      // appear on the map — a silent omission, which is the failure mode
+      // this whole schema exists to convert into a build error.
+      const hasLatLng = typeof data.lat === 'number' && typeof data.lng === 'number';
+      if (!data.location && !hasLatLng) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['location'],
+          message:
+            'a location is required — pick one on the map in the editor, or set both `lat` and `lng` by hand.',
+        });
+      }
+
       // A blurb under 20 characters says nothing useful, and this text is
       // load-bearing in four places at once: the homepage card, the map
       // popup, the RSS entry and the social preview. So it's still required

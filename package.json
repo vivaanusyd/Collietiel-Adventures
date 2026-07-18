@@ -10,7 +10,9 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "npm run sync:preview-css && astro dev",
+    "sync:preview-css": "node scripts/sync-preview-css.mjs",
+    "prebuild": "npm run sync:preview-css",
     "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",

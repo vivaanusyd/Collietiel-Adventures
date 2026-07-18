@@ -1,5 +1,10 @@
 dist/
 .astro/
+
+# Generated from src/styles/global.css on every build by
+# scripts/sync-preview-css.mjs. Ignored so nobody edits the copy and expects
+# it to survive — edit the source stylesheet instead.
+public/admin/preview.css
 node_modules/
 .DS_Store
 .claude/

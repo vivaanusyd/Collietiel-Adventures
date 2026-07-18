@@ -1,0 +1,421 @@
+# Sveltia CMS — the editor writers use. Companion to src/content/config.ts.
+#
+# THESE TWO FILES ARE ONE CONTRACT. Every field here mirrors a field there:
+# same name, same required/optional split, same allowed values. When they
+# disagree, a writer saves something that fails the build, gets an error
+# about zod, and cannot fix it themselves — which is the single worst
+# failure mode this whole setup has. test/blocks.test.mjs asserts the block
+# vocabulary in the two files still matches; the rest is on whoever edits.
+#
+# Where the schema has a constraint, it is surfaced HERE as a widget rule so
+# the writer hits it while typing, not as a build error twenty minutes later.
+
+backend:
+  name: github
+  repo: vivaanusyd/Collietiel-Adventures
+  branch: main
+  # Points at the Netlify Functions in netlify/functions/. GitHub OAuth
+  # requires a client SECRET to exchange the code for a token, and a secret
+  # cannot live in a static site — anything shipped to the browser is
+  # readable by anyone who opens devtools. The function holds it server-side.
+  base_url: https://collietiel-adventures.netlify.app
+  # No leading slash: the CMS joins these as `${base_url}/${auth_endpoint}`,
+  # so "/api/auth" would produce a doubled slash in the URL.
+  auth_endpoint: api/auth
+
+# Writers submit pull requests; nothing they do reaches `main` on its own.
+# Combined with GitHub repo permissions this is the whole permission model:
+# write access = can open a PR, admin = can merge. The check happens on
+# GitHub's servers against real accounts, which is why there is deliberately
+# no password anywhere in this project — see public/admin/index.html.
+publish_mode: editorial_workflow
+
+media_folder: public/images/reviews
+public_folder: /images/reviews
+
+# Sveltia compresses and resizes on upload, so a 6 MB phone photo doesn't
+# get committed to the repo at full size. 2000px is wider than the widest
+# slot the site has (full-bleed on a large desktop).
+media_libraries:
+  default:
+    config:
+      max_file_size: 10000000
+      transformations:
+        raster_image:
+          format: webp
+          quality: 82
+          width: 2000
+          height: 2000
+
+collections:
+  - name: reviews
+    label: Reviews
+    label_singular: Review
+    folder: src/content/reviews
+    create: true
+    # The filename is the URL. Derived from the restaurant name, and warned
+    # about in the editor because renaming after publishing breaks every
+    # existing link to the review.
+    slug: '{{fields.name | slugify}}'
+    path: '{{slug}}'
+    extension: md
+    format: yaml-frontmatter
+    preview_path: reviews/{{slug}}
+    summary: '{{name}} — {{rating}}★{{#if draft}} (draft){{/if}}'
+    sortable_fields: [date, name, rating]
+    view_groups:
+      - label: Status
+        field: draft
+    # Files starting with _ are ignored by Astro's content loader, so they
+    # must be hidden here too or a writer can open _README.md as a review.
+    filter: { field: name, pattern: '.+' }
+
+    fields:
+      # --- 1. what and where ------------------------------------------
+      - name: name
+        label: Restaurant name
+        widget: string
+        required: true
+        hint: The name as it appears on the door.
+
+      - name: location
+        label: Where is it?
+        widget: map
+        type: Point
+        required: true
+        # Sydney, so the picker opens somewhere useful rather than in the
+        # middle of the Atlantic at [0, 0].
+        center: [151.2093, -33.8688]
+        zoom: 11
+        decimals: 6
+        hint: >-
+          Search for the address, or drag the pin. You never need to type
+          coordinates — this writes them for you.
+
+      - name: address
+        label: Street address
+        widget: string
+        required: false
+        hint: Shown under the review title. Optional, but useful to readers.
+
+      - name: cuisine
+        label: Cuisine
+        widget: string
+        required: false
+        hint: >-
+          One or two words — "Sichuan", "Café", "Seafood". This groups the
+          review onto a cuisine page, so reuse an existing spelling if one
+          fits.
+
+      - name: date
+        label: Date of visit
+        widget: datetime
+        date_format: YYYY-MM-DD
+        time_format: false
+        picker_utc: false
+        required: true
+
+      # --- 2. the verdict ---------------------------------------------
+      - name: rating
+        label: Rating
+        widget: number
+        value_type: int
+        min: 1
+        max: 5
+        step: 1
+        required: true
+        hint: Whole stars only, 1 to 5. No half stars — the site can't draw them.
+
+      - name: reaction
+        label: Verdict badge
+        widget: select
+        required: true
+        # NOTE: these are text options showing "Animal — meaning", not the
+        # picture-picker this deserves. Sveltia has no image-select widget
+        # and its custom-widget API (registerFieldType) is documented but
+        # not yet implemented — it's on the 1.0 milestone. When it lands,
+        # this becomes a grid of the actual PNGs from public/icons/.
+        # Until then the labels at least never show a writer a raw key
+        # like `fox`. See NOTES-FOR-VIVAAN.md.
+        options:
+          - { label: '🐷  Pig — go hungry', value: pig }
+          - { label: '🐻  Bear — huge portions', value: bear }
+          - { label: '🐝  Bee — sweet tooth territory', value: bee }
+          - { label: '🦀  Crab — seafood done right', value: crab }
+          - { label: '🦉  Owl — open late', value: owl }
+          - { label: '🐱  Cat — cosy, lingerable', value: cat }
+          - { label: '🦊  Fox — clever cooking', value: fox }
+          - { label: '🐌  Snail — take your time', value: snail }
+        hint: >-
+          One per review — the at-a-glance summary on the card. Different
+          from the emotion icons you drop into the writing.
+
+      - name: blurb
+        label: Blurb
+        widget: string
+        required: false
+        minlength: 20
+        maxlength: 160
+        # minlength/maxlength give Sveltia's live character counter, which is
+        # the whole reason this is a `string` and not a `text` widget.
+        hint: >-
+          20–160 characters. This one sentence is doing four jobs: it's the
+          homepage card, the map popup, the RSS entry, and the preview people
+          see when the link is pasted into a chat. Required before publishing
+          — a draft can leave it empty.
+
+      # --- 3. the photo -----------------------------------------------
+      - name: cover
+        label: Cover photo
+        widget: image
+        required: false
+        hint: Optional. A review with no photo yet still looks right.
+
+      - name: coverAlt
+        label: Cover photo description
+        widget: string
+        required: false
+        hint: >-
+          What's in the photo, in a few words. This is what a screen reader
+          announces instead of the image.
+
+      - name: hotspots
+        label: Labels on the cover photo
+        label_singular: Label
+        widget: list
+        required: false
+        collapsed: false
+        # NOTE: x/y are number inputs, not click-to-place on the image.
+        # Click-to-place needs a custom widget (see `reaction` above for
+        # why that isn't possible yet). Percentages from the top-left are
+        # the least-bad manual stand-in; the preview pane shows where the
+        # dot lands, so it's adjust-and-look rather than pure guesswork.
+        hint: >-
+          Optional dish call-outs pinned to the cover photo. Two or three at
+          most — the point is to name what you're about to write about.
+        fields:
+          - { name: label, label: Label, widget: string, required: true }
+          - name: x
+            label: Across (%)
+            widget: number
+            value_type: int
+            min: 0
+            max: 100
+            required: true
+            hint: 0 is the left edge, 100 the right.
+          - name: y
+            label: Down (%)
+            widget: number
+            value_type: int
+            min: 0
+            max: 100
+            required: true
+            hint: 0 is the top, 100 the bottom.
+
+      # --- 4. the review itself ---------------------------------------
+      - name: blocks
+        label: The review
+        label_singular: Block
+        widget: list
+        required: false
+        types_key: type
+        collapsed: false
+        hint: >-
+          Add blocks and drag them into the order you want. Each block has
+          its own settings.
+        types:
+          - name: text
+            label: Text
+            summary: '{{body}}'
+            fields:
+              - name: body
+                label: Text
+                widget: markdown
+                required: true
+                hint: >-
+                  Bold, italic, links, headings, lists and quotes are in the
+                  toolbar. To drop in an emotion icon, use the palette button
+                  in the top bar and click the face you want.
+              - name: size
+                label: Size
+                widget: select
+                default: normal
+                options:
+                  - { label: Small, value: small }
+                  - { label: Normal, value: normal }
+                  - { label: Large, value: large }
+                  - { label: Display — for a heading moment, value: display }
+              - name: align
+                label: Alignment
+                widget: select
+                default: left
+                options:
+                  - { label: Left, value: left }
+                  - { label: Centred, value: center }
+              - name: emphasis
+                label: Colour
+                widget: select
+                default: default
+                # Palette slots, not a colour picker — on purpose. See
+                # src/lib/block-options.mjs for the reasoning; the short
+                # version is that arbitrary per-element colour is how a site
+                # becomes un-redesignable.
+                options:
+                  - { label: Default text, value: default }
+                  - { label: Accent (the site red), value: accent }
+                  - { label: Muted grey, value: muted }
+                hint: >-
+                  Three site colours rather than a colour picker, so the site
+                  stays redesignable — change the palette once and every
+                  review follows.
+
+          - name: image
+            label: Image
+            summary: '{{alt}}'
+            fields:
+              - { name: src, label: Image, widget: image, required: true }
+              - name: alt
+                label: Image description
+                widget: string
+                required: true
+                hint: >-
+                  Required. This is what a screen reader announces instead of
+                  the picture, so describe what's in it.
+              - { name: caption, label: Caption (optional), widget: string, required: false }
+              - name: layout
+                label: Width
+                widget: select
+                default: normal
+                options:
+                  - { label: Full bleed — edge to edge, value: full }
+                  - { label: Wide — wider than the text, value: wide }
+                  - { label: Normal — same width as the text, value: normal }
+                  - { label: Inset — narrower, centred, value: inset }
+                  - { label: Float left, text wraps around it, value: left }
+                  - { label: Float right, text wraps around it, value: right }
+
+          - name: gallery
+            label: Gallery
+            summary: '{{images.length}} images'
+            fields:
+              - name: images
+                label: Images
+                widget: list
+                min: 2
+                max: 3
+                required: true
+                hint: Two or three images in a row.
+                fields:
+                  - { name: src, label: Image, widget: image, required: true }
+                  - name: alt
+                    label: Image description
+                    widget: string
+                    required: true
+                    hint: Required — what a screen reader announces.
+                  - { name: caption, label: Caption (optional), widget: string, required: false }
+
+          - name: annotated
+            label: Annotated photo
+            summary: '{{alt}}'
+            fields:
+              - { name: src, label: Image, widget: image, required: true }
+              - name: alt
+                label: Image description
+                widget: string
+                required: true
+                hint: Required — what a screen reader announces.
+              - { name: caption, label: Caption (optional), widget: string, required: false }
+              - name: hotspots
+                label: Labels on the photo
+                label_singular: Label
+                widget: list
+                min: 1
+                required: true
+                fields:
+                  - { name: label, label: Label, widget: string, required: true }
+                  - name: x
+                    label: Across (%)
+                    widget: number
+                    value_type: int
+                    min: 0
+                    max: 100
+                    required: true
+                  - name: y
+                    label: Down (%)
+                    widget: number
+                    value_type: int
+                    min: 0
+                    max: 100
+                    required: true
+
+          - name: quote
+            label: Pull quote
+            summary: '{{text}}'
+            fields:
+              - name: text
+                label: Quote
+                widget: text
+                required: true
+                hint: A line worth enlarging.
+              - {
+                  name: attribution,
+                  label: Who said it (optional),
+                  widget: string,
+                  required: false,
+                }
+              - name: align
+                label: Alignment
+                widget: select
+                default: left
+                options:
+                  - { label: Left, value: left }
+                  - { label: Centred, value: center }
+
+          - name: dishes
+            label: Dish list
+            summary: '{{items.length}} dishes'
+            fields:
+              - name: items
+                label: Dishes
+                label_singular: Dish
+                widget: list
+                min: 1
+                required: true
+                fields:
+                  - { name: name, label: Dish, widget: string, required: true }
+                  - name: price
+                    label: Price (optional)
+                    widget: string
+                    required: false
+                    hint: >-
+                      Written however the menu writes it — "$18", "market
+                      price", "8 ea".
+                  - { name: note, label: One-line note (optional), widget: string, required: false }
+
+      # --- 5. publishing ----------------------------------------------
+      - name: draft
+        label: Keep as a draft
+        widget: boolean
+        default: true
+        # Defaults to TRUE so a half-finished review can never reach the live
+        # site by being forgotten. Publishing is a deliberate act.
+        hint: >-
+          On means nobody but you and the editor can see it. Turn it off when
+          the review is ready to go live.
+
+      - name: author
+        label: Written by
+        widget: string
+        default: Vivaan
+        required: true
+
+      - name: updated
+        label: Date revised
+        widget: datetime
+        date_format: YYYY-MM-DD
+        time_format: false
+        picker_utc: false
+        required: false
+        hint: >-
+          Only set this if you've changed an already-published review in a way
+          that changes your verdict. Leave it empty for typo fixes.

@@ -24,6 +24,41 @@ export async function getPublishedReviews(): Promise<Review[]> {
 }
 
 /**
+ * Where a review's pin goes, from either accepted spelling.
+ *
+ * The CMS map picker writes stringified GeoJSON to `location`; a file
+ * written by hand uses `lat`/`lng`. Everything that needs coordinates — the
+ * map, the sitemap, the JSON-LD — goes through here, so neither the pin nor
+ * the structured data can disagree about where a restaurant is.
+ *
+ * Returns null when the review has neither, which the schema forbids, so in
+ * practice this only guards against malformed GeoJSON.
+ */
+export function reviewCoords(review: Review): { lat: number; lng: number } | null {
+  const { location, lat, lng } = review.data;
+
+  if (location) {
+    try {
+      const parsed = JSON.parse(location);
+      // GeoJSON is [longitude, latitude] — the reverse of how it's spoken,
+      // and the one thing worth being explicit about at every read site.
+      const [parsedLng, parsedLat] = parsed?.coordinates ?? [];
+      if (typeof parsedLat === 'number' && typeof parsedLng === 'number') {
+        return { lat: parsedLat, lng: parsedLng };
+      }
+      console.warn(
+        `[reviews] ${review.slug}: \`location\` is not a GeoJSON Point — no pin will be shown.`
+      );
+    } catch {
+      console.warn(`[reviews] ${review.slug}: \`location\` is not valid JSON.`);
+    }
+  }
+
+  if (typeof lat === 'number' && typeof lng === 'number') return { lat, lng };
+  return null;
+}
+
+/**
  * Rough reading time in minutes, from every word on the page.
  *
  * 200 wpm is the usual published estimate for general-audience prose.

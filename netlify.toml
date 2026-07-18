@@ -14,6 +14,29 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# The GitHub OAuth handshake for the CMS at /admin/. Netlify auto-detects
+# this directory, but it's written down so the functions are discoverable
+# from the config rather than only by finding the folder.
+#
+# Each function declares its own route via `export const config = { path }`
+# (Netlify Functions v2), so there are no redirect rules to keep in step:
+#   netlify/functions/auth.mjs     -> /api/auth
+#   netlify/functions/callback.mjs -> /api/callback
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# TWO ENVIRONMENT VARIABLES MUST BE SET IN THE NETLIFY DASHBOARD, not here:
+#
+#   GITHUB_OAUTH_ID       the OAuth app's client ID
+#   GITHUB_OAUTH_SECRET   the OAuth app's client secret
+#
+# They are deliberately absent from this file and from the repository. A
+# client secret in Git is a client secret published — the repo is readable,
+# and Git remembers it even after a later commit removes it. Set them at
+# Site configuration -> Environment variables; see docs/SETUP-CHECKLIST.md
+# for the full walkthrough.
+
 # dist/404.html is picked up automatically for unmatched routes — no redirect
 # rule needed. See src/pages/404.astro.
 
