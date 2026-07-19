@@ -162,8 +162,11 @@ name in `block-options.mjs`, a branch in `BlockContent.astro`, and a
 `types:` entry in `public/admin/config.yml`. The CMS test fails until the
 first and
 last agree. The canvas dock in `src/scripts/arrange.ts` also lists the
-types, and needs schema-matching defaults there so a newly added block is
-valid the moment it's saved.
+types, with starting values using the schema's field names — note most
+types still need real content (an image path, alt text, a dish) before the
+schema accepts them, which is why the canvas's save warns about unfinished
+blocks (`unfinished()` there mirrors the schema's hard requirements; keep
+the two in step).
 
 Text blocks render through `src/lib/markdown.ts`, which uses the same remark
 pipeline as the review body — that's what makes `:collie-smiling:` work

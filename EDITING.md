@@ -213,14 +213,21 @@ There's a button for it in the bottom-right of the editor, or go straight to
 
 **How it works:**
 
-- Hover the **Add** tab on the left edge and a dock slides out. Click a
-  block type to drop one onto the page. (Click **Pin** to keep the dock
-  open while you work.)
-- **Drag** a block to move it. Grab its right or bottom edge to resize.
-- Click a block to open its settings on the right.
+- The page shows your actual blocks — real text, real photos — on a sheet
+  in the middle of the screen.
+- The **dock** along the bottom holds the block types. **Drag one onto the
+  page** to place it right there, or just click it to add it below your
+  existing work.
+- **Drag** a block to move it. Grab the round corner knob (or the right or
+  bottom edge) to resize. Drag a block onto the **bin** in the top toolbar
+  to delete it.
+- Click a block and a small row of quick actions appears above it —
+  settings, duplicate, bring forward/backward, delete. Double-click (or
+  press **Enter**) to open its settings panel straight away.
 - **Arrow keys** nudge the selected block one column; hold **Shift** for
   four at a time. Often faster than dragging for small adjustments.
-- **Delete** removes the selected block, **Undo** steps back.
+- **Delete** removes the selected block. **Undo and redo** live in the top
+  toolbar, or ⌘Z / ⌘⇧Z.
 
 **Blocks snap to a grid.** That's deliberate, and it's what stops the page
 falling apart: the canvas is 24 columns wide, and a block remembers *which

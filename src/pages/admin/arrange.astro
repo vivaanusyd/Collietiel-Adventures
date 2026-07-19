@@ -19,6 +19,16 @@ import { GRID_COLUMNS, GRID_COLUMNS_MOBILE, GRID_ROW_HEIGHT } from '../../lib/bl
 // of the grid maths, the canvas would eventually disagree with the site
 // about where a block sits — which is the one bug that would make the whole
 // tool untrustworthy.
+//
+// THE CHROME
+//
+// Follows the Claude Design prototype in layout-editor/: the page floats
+// like a sheet of paper on a desk, tools live in a floating island at the
+// top right, block types in a dock along the bottom you drag onto the page,
+// and a selected block gets a small pill of quick actions plus a settings
+// panel. The prototype's free pixels and free fonts did NOT carry over —
+// placement stays grid coordinates and styling stays the palette, which is
+// the whole design idea of the block system (see src/lib/block-options.mjs).
 
 const gridConfig = {
   columns: GRID_COLUMNS,
@@ -43,66 +53,109 @@ const gridConfig = {
     />
   </head>
   <body class="arrange">
-    <header class="bar">
-      <a class="bar__back" href="/admin/">&larr; Editor</a>
-
-      <label class="bar__field">
+    <!-- Floating islands instead of a bar: the page is the subject, so the
+         chrome floats over the desk rather than framing it. -->
+    <header class="island island--left">
+      <a class="island__back" href="/admin/">&larr; Editor</a>
+      <label class="island__field">
         <span class="sr-only">Review</span>
         <select id="review-select"><option>Loading…</option></select>
       </label>
+    </header>
 
-      <div class="bar__spacer"></div>
-
+    <div class="island island--right" role="toolbar" aria-label="Editor actions">
+      <span
+        class="save-chip"
+        id="save-chip"
+        data-state="saved"
+        title="Save copies the arrangement out — paste it into the review in the main editor"
+        >Saved</span
+      >
+      <span class="island__sep"></span>
+      <button
+        type="button"
+        id="undo"
+        class="island__btn"
+        title="Undo (⌘Z)"
+        aria-label="Undo"
+        disabled>↶</button
+      >
+      <button
+        type="button"
+        id="redo"
+        class="island__btn"
+        title="Redo (⌘⇧Z)"
+        aria-label="Redo"
+        disabled>↷</button
+      >
+      <span class="island__sep"></span>
+      <button
+        type="button"
+        id="guides"
+        class="island__btn"
+        title="Layout guides"
+        aria-label="Toggle layout guides"
+        aria-pressed="true">▦</button
+      >
       <div class="viewport-toggle" role="group" aria-label="Preview width">
         <button type="button" data-viewport="desktop" class="is-active">Desktop</button>
         <button type="button" data-viewport="mobile">Phone</button>
       </div>
-
-      <button type="button" id="undo" class="bar__btn" disabled>Undo</button>
-      <button type="button" id="save" class="bar__btn bar__btn--primary" disabled>
-        Save as draft
-      </button>
-    </header>
-
-    <p class="status" id="status" role="status" aria-live="polite"></p>
-
-    <!--
-      THE DOCK — hides at the edge, slides out on hover.
-
-      Modelled on Ultimate Chicken Horse's block picker, and the reason that
-      interaction works is worth stating: the palette is only relevant while
-      you're deciding what to place, so it stays out of the way of the thing
-      you're actually looking at (the page), but it's always in the same
-      place so reaching for it is muscle memory rather than a hunt through a
-      menu.
-
-      It stays open while a drag is in progress and can be pinned, because a
-      dock that vanishes mid-gesture is worse than one that never hid.
-    -->
-    <aside class="dock" id="dock">
-      <div class="dock__tab" aria-hidden="true">
-        <span>Add</span>
+      <span class="island__sep"></span>
+      <div
+        class="trash"
+        id="trash"
+        title="Drag a block here to delete"
+        aria-label="Delete drop zone"
+      >
+        🗑
       </div>
-      <div class="dock__panel">
-        <button type="button" class="dock__pin" id="dock-pin" aria-pressed="false" title="Keep open"
-          >Pin</button
-        >
-        <p class="dock__hint">Drag onto the page</p>
-        <div class="dock__items" id="dock-items"></div>
-      </div>
-    </aside>
+      <button type="button" id="save" class="island__primary" disabled>Save as draft</button>
+    </div>
+
+    <p class="toast" id="status" role="status" aria-live="polite"></p>
 
     <main class="stage" id="stage">
       <div class="canvas-wrap">
         <div class="canvas" id="canvas" data-viewport="desktop">
           <div class="canvas__grid" id="canvas-grid" aria-hidden="true"></div>
+          <div class="canvas__empty" id="canvas-empty" hidden>
+            <p class="canvas__empty-title">Your page starts here</p>
+            <p class="canvas__empty-hint">Drag a block up from the dock below</p>
+          </div>
           <div class="canvas__blocks" id="canvas-blocks"></div>
         </div>
+        <!-- Quick actions for the selected block; positioned by script. -->
+        <div class="pill" id="pill" hidden></div>
       </div>
     </main>
 
     <!-- Settings for whichever block is selected. Empty until one is. -->
-    <aside class="inspector" id="inspector" hidden></aside>
+    <aside class="panel" id="inspector" aria-label="Block settings" hidden></aside>
+
+    <!--
+      THE DOCK — a floating strip along the bottom, as in the prototype.
+
+      The palette is only relevant while you're deciding what to place, so
+      it stays out of the way of the thing you're actually looking at (the
+      page), but it's always in the same place so reaching for it is muscle
+      memory rather than a hunt through a menu. Drag a tool onto the page to
+      place it there; click (or Enter/Space) to add it below existing work,
+      so every block type stays reachable by keyboard.
+    -->
+    <nav class="dock" id="dock" aria-label="Add a block">
+      <button
+        type="button"
+        class="dock__lip"
+        id="dock-lip"
+        aria-expanded="true"
+        title="Minimise the dock"
+        aria-label="Minimise the dock"></button>
+      <div class="dock__items" id="dock-items"></div>
+    </nav>
+
+    <!-- Follows the pointer while dragging a new block out of the dock. -->
+    <div class="ghost" id="ghost" aria-hidden="true" hidden></div>
 
     <script>
       import '../../scripts/arrange.ts';
@@ -112,9 +165,26 @@ const gridConfig = {
       .arrange {
         margin: 0;
         min-height: 100vh;
-        display: flex;
-        flex-direction: column;
+        /* The desk the page sits on — a step warmer than the page itself,
+           mixed from the palette so dark mode gets its own desk for free. */
+        background: color-mix(in srgb, var(--color-bg) 94%, var(--color-accent));
         overflow-x: hidden;
+        /* A soft success tone for the save chip and status toast; local to
+           this page, redeclared for dark mode below. */
+        --color-ok: #1a7f37;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .arrange {
+          --color-ok: #58ab72;
+        }
+      }
+
+      /* Several floating pieces (pill, panel, empty state) set their own
+         display, which would silently beat the `hidden` attribute's
+         UA-level display:none. This keeps `hidden` meaning hidden. */
+      .arrange [hidden] {
+        display: none !important;
       }
 
       .sr-only {
@@ -126,64 +196,135 @@ const gridConfig = {
         white-space: nowrap;
       }
 
-      /* --- top bar --- */
-      .bar {
+      /* --- floating islands --- */
+      .island {
+        position: fixed;
+        top: 0.9rem;
+        z-index: 50;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.6rem 1rem;
-        border-bottom: 1px solid var(--color-border);
+        gap: 0.45rem;
+        padding: 0.45rem 0.6rem;
         background: var(--color-surface);
-        position: sticky;
-        top: 0;
-        z-index: 50;
-      }
-
-      .bar__spacer {
-        flex: 1;
-      }
-
-      .bar__back {
-        text-decoration: none;
-        font-size: 0.9rem;
-      }
-
-      .bar select,
-      .bar__btn {
-        font: inherit;
-        font-size: 0.9rem;
-        padding: 0.4rem 0.7rem;
         border: 1px solid var(--color-border);
-        border-radius: 8px;
+        border-radius: 14px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+      }
+
+      .island--left {
+        left: 0.9rem;
+      }
+
+      .island--right {
+        right: 0.9rem;
+      }
+
+      .island__back {
+        text-decoration: none;
+        font-size: 0.85rem;
+        padding: 0.25rem 0.4rem;
+        white-space: nowrap;
+      }
+
+      .island select {
+        font: inherit;
+        font-size: 0.85rem;
+        max-width: 15rem;
+        padding: 0.35rem 0.5rem;
+        border: 1px solid var(--color-border);
+        border-radius: 9px;
         background: var(--color-bg);
         color: var(--color-text);
         cursor: pointer;
       }
 
-      .bar__btn--primary {
-        background: var(--color-accent);
-        border-color: var(--color-accent);
-        color: #fff;
+      .island__sep {
+        width: 1px;
+        align-self: stretch;
+        margin: 0.2rem 0.1rem;
+        background: var(--color-border);
       }
 
-      .bar__btn:disabled {
+      .island__btn {
+        font: inherit;
+        font-size: 1rem;
+        line-height: 1;
+        width: 2.1rem;
+        height: 2.1rem;
+        display: grid;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        background: none;
+        color: var(--color-text);
+        cursor: pointer;
+      }
+
+      .island__btn:hover:not(:disabled),
+      .island__btn:focus-visible {
+        background: var(--color-bg);
+        border-color: var(--color-border);
+      }
+
+      .island__btn[aria-pressed='true'] {
+        background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+      }
+
+      .island__btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
+      .island__primary {
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.45rem 0.8rem;
+        border: 1px solid var(--color-accent);
+        border-radius: 10px;
+        background: var(--color-accent);
+        color: #fff;
+        cursor: pointer;
+      }
+
+      .island__primary:disabled {
         opacity: 0.45;
         cursor: default;
+      }
+
+      .save-chip {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+
+      .save-chip[data-state='saved'] {
+        color: var(--color-ok);
+        background: color-mix(in srgb, var(--color-ok) 12%, var(--color-surface));
+      }
+
+      .save-chip[data-state='dirty'] {
+        color: var(--color-accent);
+        background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
       }
 
       .viewport-toggle {
         display: flex;
         border: 1px solid var(--color-border);
-        border-radius: 8px;
+        border-radius: 9px;
         overflow: hidden;
       }
 
       .viewport-toggle button {
         font: inherit;
-        font-size: 0.85rem;
-        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+        padding: 0.35rem 0.65rem;
         border: 0;
-        background: var(--color-bg);
+        background: var(--color-surface);
         color: var(--color-muted);
         cursor: pointer;
       }
@@ -193,155 +334,75 @@ const gridConfig = {
         color: #fff;
       }
 
-      .status {
+      .trash {
+        width: 2.1rem;
+        height: 2.1rem;
+        display: grid;
+        place-items: center;
+        border: 1px dashed var(--color-border);
+        border-radius: 9px;
+        font-size: 0.95rem;
+        user-select: none;
+      }
+
+      .trash.is-armed {
+        border-color: var(--color-warning-line);
+        border-style: solid;
+        background: var(--color-warning-bg);
+      }
+
+      /* --- status toast --- */
+      .toast {
+        position: fixed;
+        left: 0.9rem;
+        bottom: 0.9rem;
+        z-index: 60;
         margin: 0;
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
+        max-width: 22rem;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.82rem;
         color: var(--color-muted);
-        min-height: 1.2em;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
       }
 
-      .status[data-tone='ok'] {
-        color: #1a7f37;
+      .toast.is-show {
+        opacity: 1;
       }
 
-      .status[data-tone='error'] {
+      .toast[data-tone='ok'] {
+        color: var(--color-ok);
+      }
+
+      .toast[data-tone='error'] {
         color: var(--color-warning-line);
       }
 
-      /* --- the dock ---
-         Hidden at the edge; slides out on hover or focus. The tab stays
-         visible so it's discoverable rather than a secret gesture. */
-      .dock {
-        position: fixed;
-        left: 0;
-        top: 45%;
-        transform: translateY(-50%);
-        z-index: 40;
-        display: flex;
-        align-items: center;
-      }
-
-      .dock__tab {
-        background: var(--color-accent);
-        color: #fff;
-        writing-mode: vertical-rl;
-        padding: 1rem 0.35rem;
-        border-radius: 0 8px 8px 0;
-        font-size: 0.8rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        cursor: pointer;
-      }
-
-      .dock__panel {
-        width: 190px;
-        margin-left: -190px;
-        opacity: 0;
-        pointer-events: none;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-left: 0;
-        border-radius: 0 10px 10px 0;
-        padding: 0.75rem;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
-        transition:
-          margin-left 0.18s ease,
-          opacity 0.18s ease;
-      }
-
-      .dock:hover .dock__panel,
-      .dock:focus-within .dock__panel,
-      .dock.is-pinned .dock__panel {
-        margin-left: 0;
-        opacity: 1;
-        pointer-events: auto;
-      }
-
-      /* The dock is a convenience, not the only way in — every block type is
-         also reachable by keyboard through the panel's buttons. */
-      @media (prefers-reduced-motion: reduce) {
-        .dock__panel {
-          transition: none;
-        }
-      }
-
-      .dock__hint {
-        margin: 0 0 0.5rem;
-        font-size: 0.75rem;
-        color: var(--color-muted);
-      }
-
-      .dock__pin {
-        float: right;
-        font: inherit;
-        font-size: 0.7rem;
-        padding: 0.15rem 0.4rem;
-        border: 1px solid var(--color-border);
-        border-radius: 6px;
-        background: var(--color-bg);
-        color: var(--color-muted);
-        cursor: pointer;
-      }
-
-      .dock__pin[aria-pressed='true'] {
-        background: var(--color-accent);
-        color: #fff;
-        border-color: var(--color-accent);
-      }
-
-      .dock__items {
-        display: grid;
-        gap: 0.3rem;
-        clear: both;
-      }
-
-      .dock__item {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        padding: 0.45rem 0.5rem;
-        border: 1px solid transparent;
-        border-radius: 8px;
-        background: none;
-        font: inherit;
-        font-size: 0.85rem;
-        color: var(--color-text);
-        cursor: pointer;
-        text-align: left;
-      }
-
-      .dock__item:hover,
-      .dock__item:focus-visible {
-        background: var(--color-bg);
-        border-color: var(--color-border);
-      }
-
-      .dock__icon {
-        width: 1.4em;
-        text-align: center;
-        color: var(--color-accent);
-      }
-
-      /* --- the canvas --- */
+      /* --- the canvas: a page on a desk --- */
       .stage {
-        flex: 1;
-        padding: 1rem 1rem 6rem;
+        padding: 4.5rem 1rem 8rem;
         display: flex;
         justify-content: center;
       }
 
       .canvas-wrap {
+        position: relative; /* the selection pill positions against this */
         width: 100%;
         max-width: 1000px;
       }
 
       .canvas {
         position: relative;
-        min-height: 70vh;
-        background: var(--color-bg);
+        min-height: 75vh;
+        background: var(--color-surface);
         border: 1px solid var(--color-border);
-        border-radius: var(--radius);
+        border-radius: 14px;
+        box-shadow: 0 14px 44px rgba(0, 0, 0, 0.14);
         margin-inline: auto;
         transition: max-width 0.2s ease;
       }
@@ -363,6 +424,7 @@ const gridConfig = {
       .canvas__grid {
         position: absolute;
         inset: 0;
+        border-radius: inherit;
         background-image: repeating-linear-gradient(
           to right,
           color-mix(in srgb, var(--color-border) 70%, transparent) 0 1px,
@@ -373,26 +435,46 @@ const gridConfig = {
         opacity: 0.6;
       }
 
+      .canvas__empty {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        pointer-events: none;
+        color: var(--color-muted);
+      }
+
+      .canvas__empty-title {
+        margin: 0 0 0.3rem;
+        font-family: var(--font-display);
+        font-style: italic;
+        font-size: 1.4rem;
+      }
+
+      .canvas__empty-hint {
+        margin: 0;
+        font-size: 0.85rem;
+      }
+
       .canvas__blocks {
         position: relative;
-        min-height: 70vh;
+        min-height: 75vh;
         padding: 0;
       }
 
+      /* --- blocks: real content, light chrome --- */
       .cblock {
         position: relative;
-        display: flex;
-        align-items: flex-start;
-        gap: 0.4rem;
         overflow: hidden;
-        padding: 0.4rem 0.5rem;
-        border: 1px solid var(--color-border);
+        border: 1px solid transparent;
         border-radius: 8px;
-        background: var(--color-surface);
-        font-size: 0.8rem;
-        line-height: 1.35;
         cursor: grab;
         touch-action: none;
+      }
+
+      .cblock:hover {
+        border-color: var(--color-border);
       }
 
       .cblock:active {
@@ -404,16 +486,175 @@ const gridConfig = {
         box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 35%, transparent);
       }
 
-      .cblock__icon {
-        color: var(--color-accent);
-        flex: none;
+      .cblock.is-doomed {
+        opacity: 0.35;
       }
 
-      .cblock__label {
-        overflow: hidden;
+      @keyframes block-in {
+        from {
+          opacity: 0;
+          transform: scale(0.92);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .cblock.is-new {
+        animation: block-in 0.22s ease;
+      }
+
+      /* Content is preview only — every pointer event belongs to the block
+         itself (drag) and its handles (resize). */
+      .cblock__content {
+        position: relative;
+        pointer-events: none;
+        height: 100%;
+        padding: 0.35rem 0.45rem;
+      }
+
+      .cblock__text {
+        font-family: var(--font-body);
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .cblock__text.is-small {
+        font-size: var(--type-small);
+      }
+
+      .cblock__text.is-normal {
+        font-size: var(--type-normal);
+      }
+
+      .cblock__text.is-large {
+        font-size: var(--type-large);
+      }
+
+      .cblock__text.is-display {
+        font-family: var(--font-display);
+        font-size: var(--type-display);
+        line-height: 1.2;
+      }
+
+      .cblock__text.is-center {
+        text-align: center;
+      }
+
+      .cblock__text.is-accent {
+        color: var(--color-accent);
+      }
+
+      .cblock__text.is-muted,
+      .cblock__text.is-empty {
         color: var(--color-muted);
       }
 
+      .cblock__text.is-empty {
+        font-style: italic;
+      }
+
+      .cblock__content > img,
+      .cblock__gallery > img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 6px;
+      }
+
+      .cblock__content > img {
+        /* Fill the cell; the caption (if any) clips rather than reflowing —
+           the cell's grid span is the truth this editor is editing. */
+        height: 100%;
+      }
+
+      .cblock__gallery {
+        display: flex;
+        gap: 4px;
+        height: 100%;
+      }
+
+      .cblock__gallery > img {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .cblock__placeholder {
+        height: 100%;
+        min-height: 3rem;
+        display: grid;
+        place-items: center;
+        border-radius: 6px;
+        background: repeating-linear-gradient(
+          45deg,
+          color-mix(in srgb, var(--color-border) 45%, transparent) 0 9px,
+          transparent 9px 18px
+        );
+      }
+
+      .cblock__placeholder span {
+        font-size: 0.72rem;
+        color: var(--color-muted);
+        background: var(--color-surface);
+        border-radius: 999px;
+        padding: 0.1rem 0.5rem;
+      }
+
+      .cblock__hotspot {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: var(--color-accent);
+        border: 2px solid var(--color-surface);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+
+      .cblock__caption {
+        margin: 0.25rem 0 0;
+        font-size: 0.78rem;
+        font-style: italic;
+        color: var(--color-muted);
+        text-align: center;
+      }
+
+      .cblock__quote {
+        margin: 0;
+        padding-left: 0.7rem;
+        border-left: 3px solid var(--color-accent);
+        font-family: var(--font-display);
+        font-style: italic;
+        font-size: 1.15rem;
+        line-height: 1.4;
+      }
+
+      .cblock__quote.is-center {
+        text-align: center;
+        border-left: 0;
+      }
+
+      .cblock__dishes {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 0.85rem;
+      }
+
+      .cblock__dishes li {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.15rem 0;
+        border-bottom: 1px dotted var(--color-border);
+      }
+
+      .cblock__dishes li span:last-child {
+        color: var(--color-muted);
+      }
+
+      /* --- resize handles --- */
       .cblock__handle {
         position: absolute;
         right: 0;
@@ -421,11 +662,6 @@ const gridConfig = {
         bottom: 0;
         width: 8px;
         cursor: ew-resize;
-        background: linear-gradient(
-          to right,
-          transparent,
-          color-mix(in srgb, var(--color-accent) 25%, transparent)
-        );
       }
 
       .cblock__handle--s {
@@ -436,73 +672,330 @@ const gridConfig = {
         width: auto;
         height: 8px;
         cursor: ns-resize;
-        background: linear-gradient(
-          to bottom,
-          transparent,
-          color-mix(in srgb, var(--color-accent) 25%, transparent)
-        );
       }
 
-      /* --- inspector --- */
-      .inspector {
-        position: fixed;
-        right: 1rem;
-        top: 5rem;
-        width: 260px;
-        max-height: 75vh;
-        overflow-y: auto;
-        z-index: 45;
-        padding: 0.9rem;
+      /* The visible corner knob — same affordance as the prototype. Only
+         shown when the block is selected or hovered, so a finished page
+         reads as a page. */
+      .cblock__knob {
+        position: absolute;
+        right: -2px;
+        bottom: -2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--color-accent);
+        border: 2px solid var(--color-surface);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        cursor: nwse-resize;
+        opacity: 0;
+        transition: opacity 0.12s ease;
+      }
+
+      .cblock:hover .cblock__knob,
+      .cblock.is-selected .cblock__knob {
+        opacity: 1;
+      }
+
+      /* --- selection pill --- */
+      .pill {
+        position: absolute;
+        z-index: 30;
+        transform: translate(-50%, -100%);
+        display: flex;
+        gap: 0.1rem;
+        padding: 0.2rem;
         background: var(--color-surface);
         border: 1px solid var(--color-border);
-        border-radius: 10px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        border-radius: 999px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
       }
 
-      .inspector h2 {
-        margin: 0 0 0.6rem;
+      .pill__btn {
+        font: inherit;
         font-size: 0.85rem;
+        line-height: 1;
+        width: 1.8rem;
+        height: 1.8rem;
+        display: grid;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        background: none;
+        color: var(--color-text);
+        cursor: pointer;
+      }
+
+      .pill__btn:hover,
+      .pill__btn:focus-visible {
+        background: var(--color-bg);
+      }
+
+      /* --- settings panel --- */
+      .panel {
+        position: fixed;
+        right: 0.9rem;
+        top: 4.5rem;
+        width: 280px;
+        max-height: calc(100vh - 12rem);
+        display: flex;
+        flex-direction: column;
+        z-index: 45;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 14px;
+        box-shadow: 0 14px 44px rgba(0, 0, 0, 0.18);
+      }
+
+      .panel__head {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 0.9rem 0.6rem;
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .panel__head h2 {
+        flex: 1;
+        margin: 0;
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
+        color: var(--color-text);
+      }
+
+      .panel__close {
+        font: inherit;
+        font-size: 0.7rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        display: grid;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        background: var(--color-warning-bg);
+        color: var(--color-warning-line);
+        cursor: pointer;
+      }
+
+      .panel__body {
+        overflow-y: auto;
+        padding: 0.8rem 0.9rem 0.9rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+
+      .panel__section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .panel__label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
         color: var(--color-muted);
       }
 
-      .insp__row {
-        display: block;
-        margin-bottom: 0.6rem;
-        font-size: 0.8rem;
-      }
-
-      .insp__row span {
-        display: block;
-        margin-bottom: 0.2rem;
+      .panel__note,
+      .panel__hint {
+        margin: 0;
+        font-size: 0.75rem;
         color: var(--color-muted);
       }
 
-      .insp__row input,
-      .insp__row select,
-      .insp__row textarea {
+      .panel__note {
+        padding: 0.45rem 0.6rem;
+        background: var(--color-note-bg);
+        border-left: 3px solid var(--color-note-line);
+        border-radius: 6px;
+        color: var(--color-text);
+      }
+
+      .panel__input {
         width: 100%;
         font: inherit;
         font-size: 0.85rem;
-        padding: 0.35rem 0.45rem;
+        padding: 0.4rem 0.5rem;
         border: 1px solid var(--color-border);
-        border-radius: 6px;
+        border-radius: 8px;
         background: var(--color-bg);
         color: var(--color-text);
       }
 
-      .insp__remove {
-        width: 100%;
-        margin-top: 0.4rem;
-        padding: 0.4rem;
+      .panel__choices {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.3rem;
+      }
+
+      .panel__chip {
+        font: inherit;
+        font-size: 0.78rem;
+        padding: 0.3rem 0.6rem;
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        background: var(--color-bg);
+        color: var(--color-text);
+        cursor: pointer;
+      }
+
+      .panel__chip[aria-pressed='true'] {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+        color: #fff;
+      }
+
+      .panel__swatch {
+        width: 1.6rem;
+        height: 1.6rem;
+        border: 1px solid var(--color-border);
+        border-radius: 50%;
+        background: var(--swatch);
+        cursor: pointer;
+      }
+
+      .panel__swatch[aria-pressed='true'] {
+        box-shadow:
+          0 0 0 2px var(--color-surface),
+          0 0 0 4px var(--color-accent);
+      }
+
+      .panel__grid4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.4rem;
+      }
+
+      .panel__cell {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+      }
+
+      .panel__cell span {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--color-muted);
+      }
+
+      .panel__level {
+        min-width: 1.4rem;
+        text-align: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .panel__remove {
         font: inherit;
         font-size: 0.8rem;
+        padding: 0.45rem;
         border: 1px solid var(--color-warning-line);
-        border-radius: 6px;
+        border-radius: 8px;
         background: var(--color-warning-bg);
         color: var(--color-warning-line);
         cursor: pointer;
+      }
+
+      /* --- the dock --- */
+      .dock {
+        position: fixed;
+        left: 50%;
+        bottom: 0.9rem;
+        transform: translateX(-50%);
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.4rem 0.55rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+        box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18);
+      }
+
+      .dock__lip {
+        width: 0.55rem;
+        align-self: stretch;
+        border: 0;
+        border-radius: 999px;
+        background: var(--color-border);
+        cursor: pointer;
+      }
+
+      .dock__lip:hover,
+      .dock__lip:focus-visible {
+        background: var(--color-accent);
+      }
+
+      .dock.is-min .dock__items {
+        display: none;
+      }
+
+      .dock__items {
+        display: flex;
+        gap: 0.3rem;
+      }
+
+      .dock__item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.15rem;
+        width: 3.2rem;
+        padding: 0.4rem 0.2rem 0.3rem;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        background: var(--color-bg);
+        font: inherit;
+        color: var(--color-text);
+        cursor: grab;
+        touch-action: none;
+      }
+
+      .dock__item:hover,
+      .dock__item:focus-visible {
+        border-color: var(--color-accent);
+      }
+
+      .dock__item:active {
+        cursor: grabbing;
+      }
+
+      .dock__icon {
+        font-size: 1.05rem;
+        line-height: 1;
+        color: var(--color-accent);
+      }
+
+      .dock__label {
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: var(--color-muted);
+      }
+
+      /* --- the spawn ghost --- */
+      .ghost {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 70;
+        padding: 0.4rem 0.7rem;
+        margin: 0.6rem 0 0 0.6rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-accent);
+        border-radius: 10px;
+        box-shadow: 0 10px 34px rgba(0, 0, 0, 0.2);
+        font-size: 0.8rem;
+        pointer-events: none;
+        white-space: nowrap;
       }
     </style>
   </body>
