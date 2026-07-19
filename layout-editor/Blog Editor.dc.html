@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400;1,600&amp;family=Lora:ital,wght@0,400;0,600;1,400&amp;family=Playfair+Display:ital,wght@0,500;0,700;1,500&amp;family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&amp;family=Nunito:wght@600;700;800&amp;family=Work+Sans:ital,wght@0,400;0,600;1,400&amp;family=Space+Grotesk:wght@400;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#f6f0e4}
+*{box-sizing:border-box}
+a{color:#c98a2e}a:hover{color:#a86f1d}
+::selection{background:#f5dfb4}
+[data-txt]:focus{outline:none}
+button{font:inherit;color:inherit;border:none;background:none;margin:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus{outline:none}
+button:focus-visible{outline:2px solid #e8a13c;outline-offset:2px;border-radius:9px}
+[data-tray]{scrollbar-width:none;-ms-overflow-style:none}
+[data-tray]::-webkit-scrollbar{display:none;width:0;height:0}
+[data-page]::-webkit-scrollbar{width:10px}
+[data-page]::-webkit-scrollbar-track{background:transparent}
+[data-page]::-webkit-scrollbar-thumb{background:rgba(200,158,86,.4);border-radius:6px;border:3px solid #f6f0e4}
+[data-obj]::-webkit-scrollbar{width:8px}
+[data-obj]::-webkit-scrollbar-thumb{background:rgba(200,158,86,.4);border-radius:5px;border:2px solid #fffaf0}
+.op-in{border:none;background:#f6f0e4;border-radius:8px;padding:6px 9px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:#4a3a28;width:100%}
+.op-in:focus{outline:2px solid #e8a13c}
+@keyframes blockIn{from{opacity:0;transform:var(--rot) scale(.9)}to{opacity:1;transform:var(--rot) scale(1)}}
+@keyframes snapPop{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+<div style="position:fixed;inset:0;overflow:hidden;font-family:'Nunito',sans-serif;color:#4a3a28;user-select:none;touch-action:none" onPointerMove="{{ onMove }}" onPointerUp="{{ onUp }}">
+  <div style="{{ deskStyle }}"></div>
+
+  <!-- PAGE -->
+  <div style="{{ pageOuterStyle }}">
+    <div data-page="" ref="{{ pageRef }}" style="{{ pageSurfaceStyle }}" onPointerDown="{{ onPageDown }}" onWheel="{{ onWheel }}">
+      <div style="{{ canvasStyle }}">
+        <sc-if value="{{ guidesOn }}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; inset: 0; pointer-events: none; border: 2px dashed rgba(200,158,86,.45); border-radius: 14px; left: 0px; top: -54px"></div>
+          <div style="position:absolute;top:0;left:0;right:0;height:132px;pointer-events:none;border-bottom:2px dashed rgba(200,158,86,.5);background:repeating-linear-gradient(45deg,rgba(232,161,60,.05) 0 10px,transparent 10px 20px)">
+            <span style="position:absolute;top:8px;left:14px;font-size:8px;font-weight:800;letter-spacing:.14em;color:#b98a3a;background:#fbf3e3;border-radius:7px;padding:2px 8px">HEADER</span>
+          </div>
+          <div style="position:absolute;top:0;bottom:0;left:40px;width:0;pointer-events:none;border-left:1.5px dashed rgba(200,158,86,.35)"></div>
+          <div style="position:absolute;top:0;bottom:0;right:40px;width:0;pointer-events:none;border-right:1.5px dashed rgba(200,158,86,.35)"></div>
+          <div style="position:absolute;top:0;bottom:0;left:50%;width:0;pointer-events:none;border-left:1px dotted rgba(200,158,86,.3)"></div>
+          <div style="position:absolute;top:700px;left:0;right:0;pointer-events:none;border-top:2px dashed rgba(184,120,60,.4)">
+            <span style="position:absolute;top:-9px;right:14px;font-size:8px;font-weight:800;letter-spacing:.1em;color:#b0763c;background:#fbf3e3;border-radius:7px;padding:2px 8px">▲ fold</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:200px;left:0;right:0;text-align:center;pointer-events:none;font-family:'Source Serif 4',serif;color:#c9b48c">
+            <div style="font-size:22px;font-style:italic;margin-bottom:6px">Your story starts here</div>
+            <div style="font-family:'Nunito',sans-serif;font-size:12px;font-weight:700">Drag text, shapes, or images from the dock below</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ snapX }}" hint-placeholder-val="{{ false }}"><div style="{{ snapXStyle }}"></div></sc-if>
+        <sc-if value="{{ snapY }}" hint-placeholder-val="{{ false }}"><div style="{{ snapYStyle }}"></div></sc-if>
+        <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="4">
+          <div data-block="" data-bid="{{ b.id }}" style="{{ b.wrapStyle }}" onPointerDown="{{ b.onDown }}" onDoubleClick="{{ b.onDbl }}">
+            <sc-if value="{{ b.isImage }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ b.imgStyle }}">
+                <sc-if value="{{ b.hasSrc }}" hint-placeholder-val="{{ false }}">{{ b.imgNode }}</sc-if>
+                <sc-if value="{{ b.noSrc }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#a08654;pointer-events:none;text-align:center;padding:0 8px">{{ b.label }}</span></sc-if>
+                <sc-if value="{{ b.isGif }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:8px;left:8px;font-size:8.5px;font-weight:800;letter-spacing:.06em;background:#4a3a28;color:#fffaf0;border-radius:7px;padding:2px 7px;pointer-events:none">GIF</span></sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ b.isText }}" hint-placeholder-val="{{ true }}">{{ b.textNode }}</sc-if>
+            <sc-if value="{{ b.isShape }}" hint-placeholder-val="{{ false }}">{{ b.shapeNode }}</sc-if>
+            <sc-if value="{{ b.single }}" hint-placeholder-val="{{ false }}">
+              <div onPointerDown="{{ b.onRotDown }}" title="rotate" aria-hidden="true" style="position:absolute;top:-28px;left:50%;margin-left:-8px;width:16px;height:16px;background:#b8dbc9;border:2px solid #fffaf0;border-radius:50%;box-shadow:0 1px 3px rgba(140,110,70,.22);cursor:grab;touch-action:none"></div>
+              <sc-if value="{{ b.oneHandle }}" hint-placeholder-val="{{ true }}">
+                <div onPointerDown="{{ b.onResizeSE }}" title="resize" aria-hidden="true" style="position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;background:#e8a13c;border:2px solid #fffaf0;border-radius:50%;box-shadow:0 1px 3px rgba(140,110,70,.22);cursor:nwse-resize;touch-action:none"></div>
+              </sc-if>
+              <sc-if value="{{ b.fourHandles }}" hint-placeholder-val="{{ false }}">
+                <div onPointerDown="{{ b.onResizeNW }}" title="resize" aria-hidden="true" style="position:absolute;top:-8px;left:-8px;width:16px;height:16px;background:#e8a13c;border:2px solid #fffaf0;border-radius:50%;box-shadow:0 1px 3px rgba(140,110,70,.22);cursor:nwse-resize;touch-action:none"></div>
+                <div onPointerDown="{{ b.onResizeNE }}" title="resize" aria-hidden="true" style="position:absolute;top:-8px;right:-8px;width:16px;height:16px;background:#e8a13c;border:2px solid #fffaf0;border-radius:50%;box-shadow:0 1px 3px rgba(140,110,70,.22);cursor:nesw-resize;touch-action:none"></div>
+                <div onPointerDown="{{ b.onResizeSW }}" title="resize" aria-hidden="true" style="position:absolute;left:-8px;bottom:-8px;width:16px;height:16px;background:#e8a13c;border:2px solid #fffaf0;border-radius:50%;box-shadow:0 1px 3px rgba(140,110,70,.22);cursor:nesw-resize;touch-action:none"></div>
+                <div onPointerDown="{{ b.onResizeSE }}" title="resize" aria-hidden="true" style="position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;background:#e8a13c;border:2px solid #fffaf0;border-radius:50%;box-shadow:0 1px 3px rgba(140,110,70,.22);cursor:nwse-resize;touch-action:none"></div>
+              </sc-if>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ selPillOn }}" hint-placeholder-val="{{ false }}">
+          <div onPointerDown="{{ selBlock.onPillDown }}" style="{{ selPillStyle }}">
+            <sc-if value="{{ selBlock.isText }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ selBlock.tBold }}" aria-label="Bold" title="Bold" style="{{ selBlock.boldStyle }}">B</button>
+              <button type="button" onClick="{{ selBlock.tItalic }}" aria-label="Italic" title="Italic" style="{{ selBlock.italStyle }}">i</button>
+              <span style="{{ selBlock.barDiv }}"></span>
+              <button type="button" onClick="{{ selBlock.sizeDec }}" aria-label="Decrease text size" title="Decrease size" style="{{ selBlock.stepStyle }}">−</button>
+              <span style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#6b573c;min-width:22px;text-align:center;pointer-events:none">{{ selBlock.sizeVal }}</span>
+              <button type="button" onClick="{{ selBlock.sizeInc }}" aria-label="Increase text size" title="Increase size" style="{{ selBlock.stepStyle }}">+</button>
+              <span style="{{ selBlock.barDiv }}"></span>
+            </sc-if>
+            <button type="button" onClick="{{ selBlock.openObj }}" aria-label="Object settings" title="Object settings" style="{{ selBlock.gearStyle }}">⚙</button>
+          </div>
+        </sc-if>
+        <div style="{{ footerStyle }}">— end of post —</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INLINE FORMAT BAR -->
+  <sc-if value="{{ fmtOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ fmtStyle }}">
+      <button type="button" onPointerDown="{{ fmtBold }}" aria-label="Bold" title="Bold" style="{{ fmtBtn }}">B</button>
+      <button type="button" onPointerDown="{{ fmtItalic }}" aria-label="Italic" title="Italic" style="{{ fmtBtnI }}">i</button>
+      <button type="button" onPointerDown="{{ fmtLink }}" aria-label="Add link" title="Link" style="{{ fmtBtnL }}">🔗</button>
+    </div>
+  </sc-if>
+
+  <!-- BACK TO EDITOR (preview) -->
+  <button type="button" onClick="{{ exitPreview }}" aria-label="Back to editor" title="Back to editor" style="{{ backBtnStyle }}" style-hover="filter:brightness(.94)" style-active="transform:translateY(1px)">← Back to editor</button>
+
+  <!-- TOP-RIGHT ISLAND -->
+  <div role="toolbar" aria-label="Editor actions" style="{{ islandStyle }}">
+    <button type="button" onClick="{{ undo }}" aria-label="Undo" title="Undo (⌘Z)" style="{{ undoStyle }}">↶</button>
+    <button type="button" onClick="{{ redo }}" aria-label="Redo" title="Redo (⌘⇧Z)" style="{{ redoStyle }}">↷</button>
+    <sc-if value="{{ zoomed }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ resetZoom }}" aria-label="Reset zoom" title="Reset zoom" style="{{ zoomChip }}">{{ zoomLabel }}</button></sc-if>
+    <span style="{{ islandSep }}"></span>
+    <button type="button" onClick="{{ toggleGuides }}" aria-label="Toggle layout guides" title="Layout guides" style="{{ guidesChip }}">▦</button>
+    <span style="{{ islandSep }}"></span>
+    <div data-trash="" title="Drag a block here to delete" aria-label="Delete drop zone" style="{{ trashStyle }}">🗑</div>
+    <button type="button" onClick="{{ enterPreview }}" aria-label="Preview post" title="Preview" style="{{ previewBtnStyle }}" style-hover="filter:brightness(.94)" style-active="transform:translateY(1px)">Preview ▸</button>
+  </div>
+
+  <!-- WALL DOCK -->
+  <div data-dock="" style="{{ dockStyle }}">
+    <button type="button" onPointerDown="{{ onDockDown }}" onKeyDown="{{ toggleDock }}" aria-label="Move or minimise toolbar" title="Drag to a wall · click to minimise" style="{{ lipStyle }}"></button>
+    <sc-if value="{{ dockOpen }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ innerStyle }}">
+        <div style="{{ iconRowStyle }}">
+          <sc-for list="{{ textTools }}" as="t">
+            <button type="button" onPointerDown="{{ t.onDown }}" onKeyDown="{{ t.onKey }}" aria-label="{{ t.title }}" title="{{ t.title }}" style="width:40px;height:40px;border-radius:10px;background:#f9f3e6;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 2px 0 #e3d5b8;touch-action:none" style-hover="background:#f5e9d2" style-active="transform:translateY(2px);box-shadow:0 0 0 #e3d5b8">
+              <span style="{{ t.glyphStyle }}">{{ t.glyph }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="{{ dividerStyle }}"></div>
+        <div style="{{ iconRowStyle }}">
+          <sc-for list="{{ shapeTools }}" as="sh">
+            <button type="button" onPointerDown="{{ sh.onDown }}" onKeyDown="{{ sh.onKey }}" aria-label="{{ sh.title }}" title="{{ sh.title }}" style="width:40px;height:40px;border-radius:10px;background:#f9f3e6;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 2px 0 #e3d5b8;touch-action:none" style-hover="background:#f5e9d2" style-active="transform:translateY(2px);box-shadow:0 0 0 #e3d5b8">
+              <span style="{{ sh.iconStyle }}"></span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="{{ dividerStyle }}"></div>
+        <div data-tray="" onPointerDown="{{ onTrayDown }}" onScroll="{{ onTrayScroll }}" style="{{ trayStyle }}">
+          <sc-for list="{{ trayItems }}" as="m">
+            <button type="button" onPointerDown="{{ m.onDown }}" onKeyDown="{{ m.onKey }}" aria-label="{{ m.label }}" title="{{ m.label }}" style="{{ m.thumbStyle }}" style-hover="box-shadow:0 0 0 2.5px #e8a13c">
+              <sc-if value="{{ m.hasSrc }}" hint-placeholder-val="{{ false }}">{{ m.imgNode }}</sc-if>
+              <sc-if value="{{ m.noSrc }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a08654;text-align:center;line-height:1.25;pointer-events:none;padding:0 3px">{{ m.label }}</span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+        <button type="button" onClick="{{ pickFiles }}" aria-label="Add images or gifs" title="Add images / gifs" style="{{ addMediaStyle }}" style-hover="background:#f5e9d2;border-color:#e8a13c" style-active="transform:translateY(1px)">
+          <span style="{{ plusStyle }}"></span>
+        </button>
+      </div>
+    </sc-if>
+  </div>
+  <input type="file" accept="image/*" multiple="" ref="{{ fileRef }}" onChange="{{ onFiles }}" style="display:none">
+
+  <sc-if value="{{ spawnGhost }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ ghostStyle }}">{{ ghostLabel }}</div>
+  </sc-if>
+
+  <!-- OBJECT PANEL (right) -->
+  <sc-if value="{{ objOpen }}" hint-placeholder-val="{{ false }}">
+    <div data-obj="" style="{{ objStyle }}">
+      <div style="display:flex;align-items:center;gap:8px;padding:15px 16px 11px;border-bottom:1.5px solid #f0e6d2">
+        <span style="font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:#4a3a28">{{ objTitle }}</span>
+        <span style="flex:1"></span>
+        <button type="button" onClick="{{ closeObj }}" aria-label="Close object panel" style="width:22px;height:22px;border-radius:50%;background:#f5b8a9;color:#7a3323;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;cursor:pointer" style-hover="background:#eda28f">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px">
+
+        <sc-if value="{{ opIsText }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">FONT</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ opFonts }}" as="f">
+                <button type="button" onClick="{{ f.onPick }}" aria-label="{{ f.label }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">COLOR</div>
+            <div style="display:flex;gap:7px">
+              <sc-for list="{{ opColors }}" as="c">
+                <button type="button" onClick="{{ c.onPick }}" aria-label="{{ c.aria }}" style="{{ c.style }}"></button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">ALIGNMENT</div>
+            <div style="display:flex;gap:6px">
+              <sc-for list="{{ opAligns }}" as="a">
+                <button type="button" onClick="{{ a.onPick }}" aria-label="{{ a.aria }}" style="{{ a.style }}">{{ a.icon }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <button type="button" onClick="{{ toggleAdv }}" aria-expanded="{{ adv }}" style="{{ advBtn }}">{{ advLabel }}</button>
+          <sc-if value="{{ adv }}" hint-placeholder-val="{{ false }}">
+            <div style="border-radius:12px;background:#faf4e8;padding:12px;display:flex;flex-direction:column;gap:11px">
+              <div style="font-family:'Nunito',sans-serif;font-size:9px;font-weight:800;letter-spacing:.08em;color:#b8944e">CHANGES EVERY {{ advType }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <sc-for list="{{ gFonts }}" as="f"><button type="button" onClick="{{ f.onPick }}" aria-label="{{ f.label }}" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="{{ opMini }}">SIZE</span><button type="button" onClick="{{ gSizeDec }}" aria-label="Decrease size" style="{{ opStep }}">−</button><span style="{{ opNum }}">{{ gSize }}</span><button type="button" onClick="{{ gSizeInc }}" aria-label="Increase size" style="{{ opStep }}">+</button>
+                <span style="flex:1"></span>
+                <button type="button" onClick="{{ gBold }}" aria-label="Bold" style="{{ gBoldStyle }}">B</button><button type="button" onClick="{{ gItalic }}" aria-label="Italic" style="{{ gItalStyle }}">i</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="{{ opMini }}">LEAD</span><button type="button" onClick="{{ gLhDec }}" aria-label="Decrease line height" style="{{ opStep }}">−</button><span style="{{ opNum }}">{{ gLh }}</span><button type="button" onClick="{{ gLhInc }}" aria-label="Increase line height" style="{{ opStep }}">+</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px">
+                <span style="{{ opMini }}">COLOR</span>
+                <sc-for list="{{ gColors }}" as="c"><button type="button" onClick="{{ c.onPick }}" aria-label="{{ c.aria }}" style="{{ c.style }}"></button></sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px">
+                <span style="{{ opMini }}">ALIGN</span>
+                <sc-for list="{{ gAligns }}" as="a"><button type="button" onClick="{{ a.onPick }}" aria-label="{{ a.aria }}" style="{{ a.style }}">{{ a.icon }}</button></sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ opIsShape }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">FILL</div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px">
+              <sc-for list="{{ opShapeColors }}" as="c">
+                <button type="button" onClick="{{ c.onPick }}" aria-label="{{ c.aria }}" style="{{ c.style }}"></button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">RESIZE</div>
+            <button type="button" onClick="{{ toggleLock }}" aria-pressed="{{ lockAspect }}" style="{{ lockBtnStyle }}">{{ lockLabel }}</button>
+          </div>
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">CORNER FILLET</div>
+            <div style="display:flex;align-items:center;gap:8px"><button type="button" onClick="{{ radDec }}" aria-label="Decrease corner radius" style="{{ opStep }}">−</button><span style="{{ opNum }}">{{ radVal }}</span><button type="button" onClick="{{ radInc }}" aria-label="Increase corner radius" style="{{ opStep }}">+</button></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ opIsImage }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ replaceImg }}" aria-label="Replace image or gif" style="{{ opBtn }}">⤢ Replace image / gif</button>
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">ALT TEXT</div>
+            <input class="op-in" type="text" aria-label="Image alt text" value="{{ altVal }}" placeholder="Describe this image" onPointerDown="{{ stopProp }}" onInput="{{ onAlt }}">
+          </div>
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">FIT</div>
+            <div style="display:flex;gap:6px">
+              <button type="button" onClick="{{ fitCover }}" aria-label="Fit: cover" style="{{ fitCoverStyle }}">Cover</button>
+              <button type="button" onClick="{{ fitContain }}" aria-label="Fit: contain" style="{{ fitContainStyle }}">Contain</button>
+            </div>
+          </div>
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">RESIZE</div>
+            <button type="button" onClick="{{ toggleLock }}" aria-pressed="{{ lockAspect }}" style="{{ lockBtnStyle }}">{{ lockLabel }}</button>
+          </div>
+          <div style="{{ opSect }}">
+            <div style="{{ opLbl }}">CORNER RADIUS</div>
+            <div style="display:flex;align-items:center;gap:8px"><button type="button" onClick="{{ radDec }}" aria-label="Decrease corner radius" style="{{ opStep }}">−</button><span style="{{ opNum }}">{{ radVal }}</span><button type="button" onClick="{{ radInc }}" aria-label="Increase corner radius" style="{{ opStep }}">+</button></div>
+          </div>
+        </sc-if>
+
+        <div style="{{ opSect }}">
+          <div style="{{ opLbl }}">SIZE &amp; ANGLE</div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1"><div style="{{ opTiny }}">W</div><input class="op-in" type="number" aria-label="Width" value="{{ wVal }}" onPointerDown="{{ stopProp }}" onInput="{{ onW }}"></div>
+            <sc-if value="{{ opHasH }}" hint-placeholder-val="{{ true }}"><div style="flex:1"><div style="{{ opTiny }}">H</div><input class="op-in" type="number" aria-label="Height" value="{{ hVal }}" onPointerDown="{{ stopProp }}" onInput="{{ onH }}"></div></sc-if>
+            <div style="flex:1"><div style="{{ opTiny }}">ANGLE</div><input class="op-in" type="number" aria-label="Angle" value="{{ rotVal }}" onPointerDown="{{ stopProp }}" onInput="{{ onRot }}"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="{{ opLbl }}">LAYER</div>
+          <div style="display:flex;gap:8px">
+            <button type="button" onClick="{{ opBackward }}" aria-label="Send backward" title="Send backward" style="{{ opLayerBtn }}">↓ Backward</button>
+            <button type="button" onClick="{{ opForward }}" aria-label="Bring forward" title="Bring forward" style="{{ opLayerBtn }}">↑ Forward</button>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="button" onClick="{{ opBack }}" aria-label="Send to back" title="Send to back" style="{{ opLayerBtn }}">⤓ To back</button>
+            <button type="button" onClick="{{ opFront }}" aria-label="Bring to front" title="Bring to front" style="{{ opLayerBtn }}">⤒ To front</button>
+          </div>
+        </div>
+        <button type="button" onClick="{{ opDup }}" aria-label="Duplicate" style="{{ opLayerBtn }}">⧉ Duplicate</button>
+        <button type="button" onClick="{{ opDelete }}" aria-label="Delete object" style="{{ opDelBtn }}">🗑 Delete object</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#e8a13c&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#e8a13c&quot;,&quot;#b0552f&quot;,&quot;#3d6b52&quot;,&quot;#4a3a28&quot;],&quot;section&quot;:&quot;Theme&quot;},&quot;defaultShapeColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#e8a13c&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#e8a13c&quot;,&quot;#f5b8a9&quot;,&quot;#b8dbc9&quot;,&quot;#c9880f&quot;,&quot;#4a3a28&quot;],&quot;section&quot;:&quot;Theme&quot;},&quot;gridSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:20,&quot;min&quot;:14,&quot;max&quot;:34,&quot;step&quot;:2,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Canvas&quot;},&quot;pageWidth&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:880,&quot;min&quot;:640,&quot;max&quot;:1000,&quot;step&quot;:20,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Canvas&quot;}}">
+const KEY='butterThymeDoc_v3';
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.fonts={serif:"'Source Serif 4', Georgia, serif",lora:"'Lora', Georgia, serif",playfair:"'Playfair Display', Georgia, serif",baskerville:"'Libre Baskerville', Georgia, serif",sans:"'Nunito', system-ui, sans-serif",worksans:"'Work Sans', system-ui, sans-serif",grotesk:"'Space Grotesk', system-ui, sans-serif",mono:"'IBM Plex Mono', monospace"};
+    this.fontList=[{key:'serif',label:'Serif'},{key:'lora',label:'Lora'},{key:'playfair',label:'Playfair'},{key:'baskerville',label:'Baskerville'},{key:'sans',label:'Nunito'},{key:'worksans',label:'Work Sans'},{key:'grotesk',label:'Grotesk'},{key:'mono',label:'Mono'}];
+    this.swatchColors=['#4a3a28','#6b573c','#a08654','#c9880f','#b0552f','#3d6b52'];
+    this.shapeColors=['#e8a13c','#f5b8a9','#b8dbc9','#c9880f','#b0552f','#4a3a28','#6b8f7a','#e6cf9a'];
+    this.past=[]; this.future=[]; this.clip=null; this.space=false; this.replaceTarget=null; this.txtEls={};
+    this.pageRef=React.createRef(); this.fileRef=React.createRef();
+    this.state={
+      doc:this.defaultDoc(), mode:'edit',anim:false,sel:[],editingId:null,
+      dock:{wall:'bottom',min:false,free:null}, trayView:{scroll:0,w:280},
+      guides:true, zoom:1, objId:null, adv:false, fmt:null,
+      snapX:null,snapY:null,spawnGhost:null,justAdded:null,drag:null
+    };
+  }
+  defaultDoc(){
+    return { nextId:8,
+      styles:{ heading:{fontKey:'serif',size:34,lh:1.15,color:'#4a3a28',bold:true,italic:false}, body:{fontKey:'serif',size:16,lh:1.65,color:'#6b573c',bold:false,italic:false}, quote:{fontKey:'serif',size:21,lh:1.45,color:'#c9880f',bold:false,italic:true}, caption:{fontKey:'serif',size:11,lh:1.5,color:'#a08654',bold:false,italic:true} },
+      media:[ {label:'hero: gnocchi in pan',gif:false,ar:1.6},{label:'browning butter',gif:true,ar:0.75},{label:'ricotta + flour mix',gif:false,ar:1.0},{label:'rolling the rope',gif:true,ar:1.4},{label:'fork ridges close-up',gif:false,ar:1.5},{label:'sage leaves',gif:false,ar:0.8},{label:'boiling + floating',gif:true,ar:1.0},{label:'final plate overhead',gif:false,ar:1.0},{label:'crispy edges macro',gif:true,ar:1.7},{label:'kitchen b-roll',gif:true,ar:1.78} ],
+      blocks:[
+        {id:1,type:'heading',x:70,y:60,w:430,h:null,rot:-1,text:'Brown-Butter Gnocchi, From Scratch'},
+        {id:2,type:'caption',x:74,y:150,w:300,h:null,rot:0,text:'a sunday project · serves four · worth every minute'},
+        {id:3,type:'image',x:530,y:70,w:280,h:190,rot:2,media:0},
+        {id:4,type:'body',x:70,y:210,w:400,h:null,rot:0,text:'Every good gnocchi story starts with a potato and a promise. Mine started with neither — just a tub of ricotta about to expire and a stubborn craving. Ricotta gnocchi are the forgiving cousin: no boiling, no ricing, no fear. You mix, you roll, you cut, and twenty minutes later there are pillowy dumplings sizzling in brown butter.'},
+        {id:5,type:'quote',x:520,y:300,w:330,h:null,rot:1,text:'“The butter is done when it smells like toasted hazelnuts and your neighbours start asking questions.”'},
+        {id:6,type:'image',x:80,y:430,w:250,h:160,rot:-2,media:1},
+        {id:7,type:'body',x:380,y:440,w:380,h:null,rot:0,text:'Crisp the sage in the same pan. Save a spoonful of the starchy water. Toss everything together off the heat so the sauce clings instead of splits — then eat immediately, standing up, straight out of the pan. That part is tradition.'}
+      ]
+    };
+  }
+  getDocument(){ return JSON.parse(JSON.stringify(this.state.doc)); }
+  loadDocument(doc){ this.push(); this.setState({doc:JSON.parse(JSON.stringify(doc)),sel:[],editingId:null,objId:null},()=>{this.persist();this.syncText(true);}); }
+
+  componentDidMount(){
+    try{ const raw=localStorage.getItem(KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.blocks) this.setState({doc:d}); } }catch(e){}
+    this.keyH=(e)=>this.onKey(e); this.keyU=(e)=>{ if(e.key===' ') this.space=false; };
+    this.selH=()=>this.onSelChange(); this.resizeH=()=>this.forceUpdate();
+    window.addEventListener('keydown',this.keyH); window.addEventListener('keyup',this.keyU);
+    window.addEventListener('resize',this.resizeH); document.addEventListener('selectionchange',this.selH);
+    setTimeout(()=>this.syncText(true),0);
+  }
+  componentWillUnmount(){ window.removeEventListener('keydown',this.keyH); window.removeEventListener('keyup',this.keyU); window.removeEventListener('resize',this.resizeH); document.removeEventListener('selectionchange',this.selH); }
+  componentDidUpdate(){ this.syncText(false); }
+
+  rgba(hex,a){ const h=String(hex||'#000000').replace('#',''); const n=h.length===3?h.split('').map(x=>x+x).join(''):h; const r=parseInt(n.slice(0,2),16)||0,g=parseInt(n.slice(2,4),16)||0,b=parseInt(n.slice(4,6),16)||0; return 'rgba('+r+','+g+','+b+','+a+')'; }
+  sanitizeHTML(html){ try{ const tpl=document.createElement('template'); tpl.innerHTML=String(html==null?'':html); const ALLOWED={B:1,STRONG:1,I:1,EM:1,U:1,BR:1,A:1}; const DROP={SCRIPT:1,STYLE:1,IFRAME:1,OBJECT:1,EMBED:1,LINK:1,META:1,FORM:1,INPUT:1}; const walk=(node)=>{ [...node.childNodes].forEach(c=>{ if(c.nodeType===1){ walk(c); const tag=c.tagName; if(DROP[tag]){ c.remove(); return; } if(!ALLOWED[tag]){ const p=c.parentNode; while(c.firstChild)p.insertBefore(c.firstChild,c); p.removeChild(c); return; } [...c.attributes].forEach(a=>{ const nm=a.name.toLowerCase(),v=(a.value||'').trim(); if(tag==='A'&&nm==='href'&&/^(https?:|mailto:|#|\/)/i.test(v))return; c.removeAttribute(a.name); }); if(tag==='A'&&c.getAttribute('href')){ c.setAttribute('rel','noopener noreferrer nofollow'); c.setAttribute('target','_blank'); } } else if(c.nodeType===8){ c.remove(); } }); }; walk(tpl.content); return tpl.innerHTML; }catch(e){ return String(html||'').replace(/<[^>]*>/g,''); } }
+  hostEl(){ return this.txtEls[this.state.editingId]; }
+  closestTag(node,tag){ tag=tag.toUpperCase(); const host=this.hostEl(); let n=node&&node.nodeType===1?node:(node?node.parentNode:null); while(n&&n!==host){ if(n.tagName===tag)return n; n=n.parentNode; } return null; }
+  unwrapEl(el){ const p=el.parentNode; if(!p)return; while(el.firstChild)p.insertBefore(el.firstChild,el); p.removeChild(el); }
+  commitEditing(){ const el=this.hostEl(); if(el) this.setBlockStyle(this.state.editingId,{text:this.sanitizeHTML(el.innerHTML)},false); }
+  applyInlineTag(tag){ const host=this.hostEl(); const sel=window.getSelection(); if(!host||!sel||sel.rangeCount===0||sel.isCollapsed)return; const range=sel.getRangeAt(0); if(!host.contains(range.commonAncestorContainer))return; const existing=this.closestTag(range.commonAncestorContainer,tag); if(existing){ this.unwrapEl(existing); host.normalize(); } else { const el=document.createElement(tag); try{ range.surroundContents(el); }catch(_){ const frag=range.extractContents(); el.appendChild(frag); range.insertNode(el); } sel.removeAllRanges(); const r2=document.createRange(); r2.selectNodeContents(el); sel.addRange(r2); } this.commitEditing(); }
+  createLink(url){ const host=this.hostEl(); const sel=window.getSelection(); if(!host||!sel||sel.rangeCount===0||sel.isCollapsed)return; const clean=String(url).trim(); if(!/^(https?:|mailto:|#|\/)/i.test(clean))return; const range=sel.getRangeAt(0); if(!host.contains(range.commonAncestorContainer))return; const a=document.createElement('a'); a.setAttribute('href',clean); try{ range.surroundContents(a); }catch(_){ const frag=range.extractContents(); a.appendChild(frag); range.insertNode(a); } this.commitEditing(); }
+  kbSpawn(e,stype,val){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); if(stype==='text')this.addText(val); else if(stype==='shape')this.addShape(val); else this.addImage(val); } }
+  toggleDockMin(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.setState(s=>({dock:{...s.dock,min:!s.dock.min}})); } }
+  buildShape(b,acc,isPrev,rad){ const col=b.color||acc; const base={width:'100%',height:'100%',pointerEvents:'none',boxShadow:isPrev?'0 4px 14px rgba(140,110,70,.16)':'none'}; if(b.shape==='circle') return React.createElement('div',{key:'sh'+b.id,style:{...base,background:col,borderRadius:'50%'}}); if(b.shape==='line'){ const r=Math.min(rad,(b.h||10)/2); return React.createElement('div',{key:'sh'+b.id,style:{...base,background:col,borderRadius:r+'px'}}); } if(b.shape==='triangle'){ const w=b.w,h=(b.h||120),r=Math.max(0,Math.min(rad,Math.min(w,h)/2.2)),s=r,ins=s*0.9; const pts=(w/2)+','+ins+' '+(w-ins)+','+(h-ins)+' '+ins+','+(h-ins); return React.createElement('svg',{key:'sh'+b.id,width:'100%',height:'100%',viewBox:'0 0 '+w+' '+h,preserveAspectRatio:'none',style:base},React.createElement('polygon',{points:pts,fill:col,stroke:col,strokeWidth:s,strokeLinejoin:'round'})); } return React.createElement('div',{key:'sh'+b.id,style:{...base,background:col,borderRadius:rad+'px'}}); }
+  startResize(e,b,corner){ e.stopPropagation(); const isText=b.type!=='image'&&b.type!=='shape'; const lock=isText?false:(b.lockAspect!=null?b.lockAspect:(b.type==='image')); const z=this.state.zoom, el=e.target.closest('[data-block]'); const bh=b.h==null?(el?el.offsetHeight/z:100):b.h; try{ if(e.target.setPointerCapture&&e.pointerId!=null) e.target.setPointerCapture(e.pointerId); }catch(_){} this.push(); this.setState({sel:[b.id],editingId:null,drag:{kind:'resize',id:b.id,mx:e.clientX,my:e.clientY,bx:b.x,by:b.y,bw:b.w,bh,corner,lock,textOnly:isText,ar:b.w/Math.max(1,bh),minW:isText?60:36,minH:30}}); }
+
+  syncText(force){ const doc=this.state.doc; doc.blocks.forEach(b=>{ if(b.type==='image'||b.type==='shape') return; const el=this.txtEls[b.id]; if(!el) return; if(document.activeElement===el && !force) return; if(el.innerHTML!==(b.text||'')) el.innerHTML=b.text||''; }); }
+
+  push(){ try{ this.past.push(JSON.stringify(this.state.doc)); if(this.past.length>80)this.past.shift(); this.future=[]; }catch(e){} }
+  persist(){ try{ localStorage.setItem(KEY,JSON.stringify(this.state.doc)); }catch(e){} }
+  setDoc(u,record){ if(record!==false) this.push(); this.setState(s=>({doc:u(s.doc)}),()=>this.persist()); }
+  undo(){ if(!this.past.length)return; this.future.push(JSON.stringify(this.state.doc)); const p=this.past.pop(); this.setState({doc:JSON.parse(p),sel:[],editingId:null,objId:null},()=>{this.persist();this.syncText(true);}); }
+  redo(){ if(!this.future.length)return; this.past.push(JSON.stringify(this.state.doc)); const n=this.future.pop(); this.setState({doc:JSON.parse(n),sel:[],editingId:null,objId:null},()=>{this.persist();this.syncText(true);}); }
+
+  onKey(e){
+    const t=e.target, typing=t&&(t.isContentEditable||t.tagName==='INPUT'||t.tagName==='TEXTAREA');
+    const mod=e.metaKey||e.ctrlKey;
+    if(mod&&(e.key==='='||e.key==='+')){ e.preventDefault(); this.setState(s=>({zoom:Math.min(2,+(s.zoom+0.1).toFixed(2))})); return; }
+    if(mod&&e.key==='-'){ e.preventDefault(); this.setState(s=>({zoom:Math.max(0.4,+(s.zoom-0.1).toFixed(2))})); return; }
+    if(mod&&e.key==='0'){ e.preventDefault(); this.setState({zoom:1}); return; }
+    if(mod&&e.key.toLowerCase()==='z'){ e.preventDefault(); if(e.shiftKey)this.redo(); else this.undo(); return; }
+    if(mod&&e.key.toLowerCase()==='y'){ e.preventDefault(); this.redo(); return; }
+    if(e.key===' '&&!typing){ this.space=true; }
+    if(typing) return;
+    if(mod&&e.key.toLowerCase()==='d'){ e.preventDefault(); this.duplicateSel(); return; }
+    if(mod&&e.key.toLowerCase()==='c'){ this.copySel(); return; }
+    if(mod&&e.key.toLowerCase()==='v'){ this.paste(); return; }
+    if((e.key==='Delete'||e.key==='Backspace')&&this.state.sel.length&&this.state.editingId==null){ e.preventDefault(); this.deleteSel(); return; }
+    if(e.key==='Escape'){ if(this.state.mode==='preview') this.setState({mode:'edit',anim:true}); else this.setState({sel:[],editingId:null,objId:null}); }
+  }
+  onSelChange(){ const S=this.state; if(S.editingId==null){ if(S.fmt) this.setState({fmt:null}); return; } const el=this.txtEls[S.editingId]; const sel=window.getSelection(); if(!el||!sel||sel.rangeCount===0||sel.isCollapsed||!el.contains(sel.anchorNode)){ if(S.fmt) this.setState({fmt:null}); return; } const r=sel.getRangeAt(0).getBoundingClientRect(); this.setState({fmt:{x:r.left+r.width/2,y:r.top}}); }
+
+  center(){ const pr=this.pageRef.current,z=this.state.zoom; return {x:pr?(pr.clientWidth/2)/z:300,y:pr?(pr.scrollTop+pr.clientHeight/2)/z:240}; }
+  markAdded(id){ this.setState({justAdded:id}); setTimeout(()=>{ if(this.state.justAdded===id) this.setState({justAdded:null}); },420); }
+  addTextAt(type,lx,ly){ const defs={heading:'New heading',body:'Start writing here — double-click to edit.',quote:'“A quotable moment goes here.”',caption:'a little caption'}; const ws={heading:360,body:340,quote:300,caption:240},w=ws[type]; let id; this.setDoc(d=>{ id=d.nextId; return {...d,nextId:d.nextId+1,blocks:[...d.blocks,{id,type,x:Math.round(lx-w/2),y:Math.round(ly-18),w,h:null,rot:0,text:defs[type]}]}; }); this.setState({sel:[id],editingId:id}); this.markAdded(id); setTimeout(()=>{this.syncText(true);this.focusText(id);},60); }
+  addImageAt(mi,lx,ly){ let id; this.setDoc(d=>{ id=d.nextId; const m=d.media[mi],ar=Math.max(0.7,Math.min(1.9,(m&&m.ar)||1.4)); const w=Math.round(170*ar); return {...d,nextId:d.nextId+1,blocks:[...d.blocks,{id,type:'image',x:Math.round(lx-w/2),y:Math.round(ly-85),w,h:Math.round(w/ar),rot:((id%3)-1)*2,media:mi}]}; }); this.setState({sel:[id]}); this.markAdded(id); }
+  addShapeAt(kind,lx,ly){ const SZ={square:[130,130],circle:[120,120],line:[240,10],triangle:[130,120]},dm=SZ[kind]||[120,120]; const col=this.props.defaultShapeColor||this.props.accentColor||'#e8a13c'; let id; this.setDoc(d=>{ id=d.nextId; return {...d,nextId:d.nextId+1,blocks:[...d.blocks,{id,type:'shape',shape:kind,x:Math.round(lx-dm[0]/2),y:Math.round(ly-dm[1]/2),w:dm[0],h:dm[1],rot:0,color:col}]}; }); this.setState({sel:[id]}); this.markAdded(id); }
+  addText(t){ const c=this.center(); this.addTextAt(t,c.x,c.y); }
+  addImage(mi){ const c=this.center(); this.addImageAt(mi,c.x,c.y); }
+  addShape(k){ const c=this.center(); this.addShapeAt(k,c.x,c.y); }
+  deleteSel(){ const ids=this.state.sel; if(!ids.length)return; this.setDoc(d=>({...d,blocks:d.blocks.filter(b=>!ids.includes(b.id))})); this.setState({sel:[],editingId:null,objId:null}); }
+  deleteBlock(id){ this.setDoc(d=>({...d,blocks:d.blocks.filter(b=>b.id!==id)})); this.setState(s=>({sel:s.sel.filter(x=>x!==id),objId:s.objId===id?null:s.objId})); }
+  duplicateSel(){ const ids=this.state.sel; if(!ids.length)return; const news=[]; this.setDoc(d=>{ let nid=d.nextId; const add=[]; d.blocks.forEach(b=>{ if(ids.includes(b.id)){ const c={...b,id:nid,x:b.x+24,y:b.y+24}; news.push(nid); add.push(c); nid++; } }); return {...d,nextId:nid,blocks:[...d.blocks,...add]}; }); this.setState({sel:news}); setTimeout(()=>this.syncText(true),0); }
+  copySel(){ const ids=this.state.sel; this.clip=this.state.doc.blocks.filter(b=>ids.includes(b.id)).map(b=>JSON.parse(JSON.stringify(b))); }
+  paste(){ if(!this.clip||!this.clip.length)return; const news=[]; this.setDoc(d=>{ let nid=d.nextId; const add=this.clip.map(b=>{ const c={...b,id:nid,x:b.x+28,y:b.y+28}; news.push(nid); nid++; return c; }); return {...d,nextId:nid,blocks:[...d.blocks,...add]}; }); this.setState({sel:news}); setTimeout(()=>this.syncText(true),0); }
+  setBlockStyle(id,patch,record){ this.setDoc(d=>({...d,blocks:d.blocks.map(b=>b.id===id?{...b,...patch}:b)}),record); }
+  toFront(id){ this.setDoc(d=>{ const b=d.blocks.find(x=>x.id===id); if(!b)return d; return {...d,blocks:[...d.blocks.filter(x=>x.id!==id),b]}; }); setTimeout(()=>this.syncText(true),0); }
+  toBack(id){ this.setDoc(d=>{ const b=d.blocks.find(x=>x.id===id); if(!b)return d; return {...d,blocks:[b,...d.blocks.filter(x=>x.id!==id)]}; }); setTimeout(()=>this.syncText(true),0); }
+  moveLayer(id,dir){ this.setDoc(d=>{ const i=d.blocks.findIndex(x=>x.id===id); if(i<0)return d; const j=i+dir; if(j<0||j>=d.blocks.length)return d; const bl=[...d.blocks]; const t=bl[i]; bl[i]=bl[j]; bl[j]=t; return {...d,blocks:bl}; }); setTimeout(()=>this.syncText(true),0); }
+  forwardOne(id){ this.moveLayer(id,1); }
+  backOne(id){ this.moveLayer(id,-1); }
+  setGlobal(type,patch){ this.setDoc(d=>({...d,styles:{...d.styles,[type]:{...d.styles[type],...patch}}})); }
+  toggleSel(id){ this.setState(s=>({sel:s.sel.includes(id)?s.sel.filter(x=>x!==id):[...s.sel,id],editingId:null})); }
+
+  focusText(id){ const el=this.txtEls[id]; if(el){ el.focus(); const r=document.createRange(); r.selectNodeContents(el); const sl=window.getSelection(); sl.removeAllRanges(); sl.addRange(r); } }
+
+  pickFiles(target){ this.replaceTarget=target!=null?target:null; if(this.fileRef.current) this.fileRef.current.click(); }
+  onFiles(e){ const files=[...(e.target.files||[])]; e.target.value=''; const tgt=this.replaceTarget; this.replaceTarget=null; files.forEach((file,fi)=>{ const reader=new FileReader(); reader.onload=(ev)=>{ const src=ev.target.result; const img=new Image(); img.onload=()=>{ const ar=(img.naturalWidth/img.naturalHeight)||1.2; const gif=/gif/i.test(file.type)||/\.gif$/i.test(file.name); let newIdx; this.setDoc(d=>{ newIdx=d.media.length; return {...d,media:[...d.media,{label:file.name,gif,ar,src}]}; }); if(tgt!=null&&fi===0){ setTimeout(()=>this.setBlockStyle(tgt,{media:newIdx},false),0); } else { const el=document.querySelector('[data-tray]'); if(el) setTimeout(()=>{el.scrollLeft=el.scrollWidth;},80); } }; img.src=src; }; reader.readAsDataURL(file); }); }
+
+  startDrag(e,kind,id,selArr){
+    e.stopPropagation(); const S=this.state, z=S.zoom, b=id!=null?S.doc.blocks.find(x=>x.id===id):null;
+    try{ if(e.target&&e.target.setPointerCapture&&e.pointerId!=null) e.target.setPointerCapture(e.pointerId); }catch(_){}
+    let extra={};
+    if(kind==='block'){ const ids=selArr||S.sel; const sels=S.doc.blocks.filter(x=>ids.includes(x.id)).map(x=>({id:x.id,x:x.x,y:x.y})); extra={sels}; this.setState({sel:ids}); this.push(); }
+    if(kind==='resize'){ const el=e.target.closest('[data-block]'); extra={bw:b.w,bh:b.h==null?(el?el.offsetHeight/z:100):b.h,isImg:b.type==='image'||b.type==='shape'}; this.push(); }
+    if(kind==='rotate'){ const el=e.target.closest('[data-block]'); const r=el.getBoundingClientRect(); extra={cx:r.left+r.width/2,cy:r.top+r.height/2}; this.push(); }
+    if(kind==='dock'){ const el=e.currentTarget.closest('[data-dock]'); const r=el.getBoundingClientRect(); extra={offx:e.clientX-r.left,offy:e.clientY-r.top,moved:false}; }
+    if(kind==='tray'){ const tr=e.currentTarget; extra={el:tr,sl0:tr.scrollLeft,moved:false}; }
+    if(kind==='pan'){ const pr=this.pageRef.current; extra={sl0:pr.scrollLeft,st0:pr.scrollTop}; }
+    this.setState({drag:{kind,id,mx:e.clientX,my:e.clientY,...extra}});
+  }
+  onWheel(e){ if(e.ctrlKey||e.metaKey){ e.preventDefault(); const dir=e.deltaY>0?-0.1:0.1; this.setState(s=>({zoom:Math.max(0.4,Math.min(2,+(s.zoom+dir).toFixed(2)))})); } }
+
+  renderVals(){
+    const S=this.state, doc=S.doc, isPrev=S.mode==='preview', anim=S.anim, z=S.zoom;
+    const acc=this.props.accentColor||'#e8a13c';
+    const grid=this.props.gridSize||20;
+    const pw=this.props.pageWidth||880;
+    const canvasH=Math.max(2400, doc.blocks.reduce((mx,b)=>{ const bh=(b.type==='image'||b.type==='shape')?(b.h||120):200; return Math.max(mx,b.y+bh); },0)+700);
+    const ids=S.sel;
+
+    const onMove=(e)=>{
+      const d=S.drag; if(!d) return;
+      const dx=(e.clientX-d.mx), dy=(e.clientY-d.my);
+      if(d.kind==='pan'){ const pr=this.pageRef.current; if(pr){ pr.scrollLeft=d.sl0-dx; pr.scrollTop=d.st0-dy; } return; }
+      if(d.kind==='block'){
+        const pr=this.pageRef.current, colW=pr?pr.clientWidth/z:840;
+        const prim=d.sels.find(s=>s.id===d.id)||d.sels[0];
+        const b0=doc.blocks.find(x=>x.id===d.id), bw=b0?b0.w:200, bh=b0&&b0.h?b0.h:80;
+        let nx=prim.x+dx/z, ny=prim.y+dy/z, snapX=null, snapY=null, adjx=dx/z, adjy=dy/z;
+        const others=doc.blocks.filter(x=>!d.sels.some(s=>s.id===x.id));
+        const xLines=[40,Math.round(colW/2),Math.round(colW-40)]; others.forEach(o=>{ xLines.push(o.x,o.x+o.w/2,o.x+o.w); });
+        const xEdges=[nx,nx+bw/2,nx+bw]; let bestX=8;
+        xLines.forEach(L=>xEdges.forEach(E=>{ const dd=L-E; if(Math.abs(dd)<bestX){ bestX=Math.abs(dd); adjx=dx/z+dd; snapX=L; } }));
+        const yLines=[40,132]; others.forEach(o=>{ const oh=o.h||60; yLines.push(o.y,o.y+oh/2,o.y+oh); });
+        const yEdges=[ny,ny+bh/2,ny+bh]; let bestY=8;
+        yLines.forEach(L=>yEdges.forEach(E=>{ const dd=L-E; if(Math.abs(dd)<bestY){ bestY=Math.abs(dd); adjy=dy/z+dd; snapY=L; } }));
+        const map={}; d.sels.forEach(s=>{ map[s.id]={x:Math.round(s.x+adjx),y:Math.round(s.y+adjy)}; });
+        this.setDoc(dd=>({...dd,blocks:dd.blocks.map(b=>map[b.id]?{...b,...map[b.id]}:b)}),false);
+        this.setState({snapX,snapY});
+      }
+      else if(d.kind==='resize'){
+        const dxz=dx/z, dyz=dy/z;
+        if(d.textOnly){ const nw=Math.max(d.minW,Math.round(d.bw+dxz)); this.setDoc(dd=>({...dd,blocks:dd.blocks.map(b=>b.id===d.id?{...b,w:nw}:b)}),false); }
+        else if(d.lock){ const scale=Math.max(0.08,(d.bw+dxz)/d.bw); const nw=Math.max(d.minW,Math.round(d.bw*scale)); const nh=Math.max(d.minH,Math.round(nw/d.ar)); this.setDoc(dd=>({...dd,blocks:dd.blocks.map(b=>b.id===d.id?{...b,w:nw,h:nh}:b)}),false); }
+        else { const east=d.corner==='se'||d.corner==='ne', south=d.corner==='se'||d.corner==='sw'; let nw=east?d.bw+dxz:d.bw-dxz, nh=south?d.bh+dyz:d.bh-dyz; nw=Math.max(d.minW,Math.round(nw)); nh=Math.max(d.minH,Math.round(nh)); const nx=east?d.bx:Math.round(d.bx+(d.bw-nw)), ny=south?d.by:Math.round(d.by+(d.bh-nh)); this.setDoc(dd=>({...dd,blocks:dd.blocks.map(b=>b.id===d.id?{...b,x:nx,y:ny,w:nw,h:nh}:b)}),false); }
+      }
+      else if(d.kind==='rotate'){ const a=Math.atan2(e.clientY-d.cy,e.clientX-d.cx)*180/Math.PI+90; const sn=Math.abs(a%45)<4?Math.round(a/45)*45:a; this.setDoc(dd=>({...dd,blocks:dd.blocks.map(b=>b.id===d.id?{...b,rot:Math.round(sn)}:b)}),false); }
+      else if(d.kind==='dock'){ if(Math.abs(dx)>4||Math.abs(dy)>4)d.moved=true; this.setState(s=>({dock:{...s.dock,free:{x:e.clientX-d.offx,y:e.clientY-d.offy}}})); }
+      else if(d.kind==='tray'){ d.el.scrollLeft=d.sl0-dx; if(Math.abs(dx)>5)d.moved=true; }
+      else if(d.kind==='spawn'){
+        if(!d.armed){ if(d.stype==='image'){ if(dy<-16&&Math.abs(dy)>Math.abs(dx)){d.armed=true;} else { if(d.el)d.el.scrollLeft=d.sl0-dx; if(Math.abs(dx)>4)d.scrolled=true; return; } } else { if(Math.abs(dx)>6||Math.abs(dy)>6){d.armed=true;} else return; } }
+        const label=d.stype==='text'?('+ '+d.ttype):(d.stype==='shape'?('+ '+d.shape):(doc.media[d.media].src?'image':doc.media[d.media].label));
+        this.setState({spawnGhost:{x:e.clientX,y:e.clientY,label}});
+      }
+    };
+    const onUp=(e)=>{
+      const d=S.drag; if(!d) return;
+      if(d.kind==='dock'){ if(!d.moved){ this.setState(s=>({dock:{...s.dock,min:!s.dock.min,free:null},drag:null})); return; } const W=innerWidth,H=innerHeight,cx=e.clientX,cy=e.clientY,dl=cx,dr=W-cx,dt=cy,db=H-cy,mn=Math.min(dl,dr,dt,db); const wall=mn===dl?'left':mn===dr?'right':mn===dt?'top':'bottom'; this.setState(s=>({dock:{...s.dock,wall,free:null},drag:null})); return; }
+      if(d.kind==='spawn'){
+        if(d.armed){ const pr=this.pageRef.current; if(pr){ const r=pr.getBoundingClientRect(); if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){ const lx=(e.clientX-r.left+pr.scrollLeft)/z, ly=(e.clientY-r.top+pr.scrollTop)/z; if(d.stype==='text')this.addTextAt(d.ttype,lx,ly); else if(d.stype==='shape')this.addShapeAt(d.shape,lx,ly); else this.addImageAt(d.media,lx,ly); } } }
+        else if(!d.scrolled){ if(d.stype==='text')this.addText(d.ttype); else if(d.stype==='shape')this.addShape(d.shape); else this.addImage(d.media); }
+        this.setState({drag:null,spawnGhost:null,snapX:null,snapY:null}); return;
+      }
+      if(d.kind==='block'){ const tr=document.querySelector('[data-trash]'); if(tr){ const r=tr.getBoundingClientRect(); if(e.clientX>=r.left-6&&e.clientX<=r.right+6&&e.clientY>=r.top-6&&e.clientY<=r.bottom+6){ this.deleteSel(); this.setState({drag:null,snapX:null,snapY:null}); return; } } }
+      this.setState({drag:null,snapX:null,snapY:null});
+    };
+
+    const blocks=doc.blocks.map(b=>{
+      const sel=ids.includes(b.id)&&!isPrev, single=sel&&ids.length===1, editing=S.editingId===b.id;
+      const isImg=b.type==='image', isShape=b.type==='shape', isText=!isImg&&!isShape, boxed=isImg||isShape;
+      const gs=doc.styles[b.type]||doc.styles.body;
+      const fontKey=b.fontKey||gs.fontKey, sizeV=b.size||gs.size, colr=b.color||gs.color;
+      const bold=(b.bold!=null?b.bold:gs.bold), curItal=(b.italic!=null?b.italic:gs.italic);
+      const m=b.media!=null?doc.media[b.media]:null, hasSrc=!!(m&&m.src);
+      const rad=(b.radius!=null?b.radius:10), fit=b.fit||'cover';
+      const lockA=isText?false:(b.lockAspect!=null?b.lockAspect:isImg);
+      const rotCss='rotate('+b.rot+'deg)';
+      const wrapStyle={position:'absolute',left:b.x+'px',top:b.y+'px',width:b.w+'px',height:boxed?b.h+'px':'auto',transform:rotCss,cursor:isPrev?'default':(editing?'text':'grab'),borderRadius:'12px',border:'1.5px solid '+(isPrev?'transparent':(sel?acc:'transparent')),boxShadow:(sel&&!isPrev)?'0 0 0 3px '+this.rgba(acc,0.14):'none',padding:boxed?'0':'8px 12px',transition:anim?'border-color .3s ease, box-shadow .2s ease':'box-shadow .2s ease',zIndex:1,background:'transparent',touchAction:'none'};
+      if(S.justAdded===b.id){ wrapStyle['--rot']=rotCss; wrapStyle.animation='blockIn .34s cubic-bezier(.34,1.3,.5,1)'; }
+      const textStyle={fontFamily:this.fonts[fontKey],fontSize:sizeV+'px',lineHeight:gs.lh,color:colr,fontStyle:curItal?'italic':'normal',fontWeight:bold?700:400,cursor:'inherit',userSelect:editing?'text':'none',minHeight:'1em',outline:'none',whiteSpace:'pre-wrap',wordBreak:'break-word',textAlign:(b.align||gs.align||'left')};
+      const textNode=isText?React.createElement('div',{key:'t'+b.id,'data-txt':'1',ref:(el)=>{ if(el)this.txtEls[b.id]=el; },contentEditable:editing,suppressContentEditableWarning:true,onBlur:(ev)=>{ this.setBlockStyle(b.id,{text:this.sanitizeHTML(ev.target.innerHTML)}); this.setState({editingId:null,fmt:null}); },style:textStyle}):null;
+      return {
+        ...b, selected:sel, single, editing, isImage:isImg, isShape, isText, textNode,
+        isGif:!!(m&&m.gif), hasSrc, noSrc:!hasSrc, label:m?m.label:'',
+        imgNode:hasSrc?React.createElement('img',{src:m.src,alt:b.alt||'',style:{width:'100%',height:'100%',objectFit:fit,borderRadius:rad+'px',pointerEvents:'none',display:'block'}}):null,
+        wrapStyle,
+        imgStyle:{position:'relative',width:'100%',height:'100%',borderRadius:rad+'px',background:hasSrc?'transparent':'repeating-linear-gradient(45deg, rgba(239,227,205,.85) 0 9px, rgba(249,242,227,.6) 9px 18px)',boxShadow:isPrev?'0 6px 18px rgba(140,110,70,.18)':'none',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',overflow:'hidden'},
+        shapeNode:isShape?this.buildShape(b,acc,isPrev,rad):null,
+        oneHandle:isText||lockA, fourHandles:!isText&&!lockA,
+        onResizeSE:(e)=>this.startResize(e,b,'se'), onResizeSW:(e)=>this.startResize(e,b,'sw'), onResizeNE:(e)=>this.startResize(e,b,'ne'), onResizeNW:(e)=>this.startResize(e,b,'nw'),
+        sizeVal:sizeV,
+        pillStyle:{position:'absolute',top:'100%',left:'50%',transform:'translateX(-50%) rotate('+(-b.rot)+'deg)',marginTop:'12px',display:'flex',alignItems:'center',gap:'5px',background:'#fffaf0',borderRadius:'999px',boxShadow:'0 6px 18px rgba(140,110,70,.28)',padding:'5px 8px',zIndex:9,whiteSpace:'nowrap',cursor:'default',touchAction:'none'},
+        boldStyle:{width:'23px',height:'23px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontFamily:this.fonts.serif,fontSize:'13px',fontWeight:800,background:bold?acc:'#f6f0e4',color:bold?'#fffaf0':'#6b573c'},
+        italStyle:{width:'23px',height:'23px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontFamily:this.fonts.serif,fontStyle:'italic',fontSize:'13px',fontWeight:800,background:curItal?acc:'#f6f0e4',color:curItal?'#fffaf0':'#6b573c'},
+        barDiv:{width:'1px',height:'16px',background:'#eaddc4',flex:'none'},
+        stepStyle:{width:'20px',height:'20px',borderRadius:'50%',background:'#f6f0e4',color:'#6b573c',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',fontWeight:800,cursor:'pointer'},
+        gearStyle:{width:'23px',height:'23px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'12px',background:S.objId===b.id?acc:'#f2d791',color:S.objId===b.id?'#fffaf0':'#7a5c1f'},
+        onDown:(e)=>{ if(isPrev)return; if(this.space){ this.startDrag(e,'pan'); return; } if(editing){e.stopPropagation();return;} if(e.shiftKey){e.stopPropagation();this.toggleSel(b.id);return;} const sarr=ids.includes(b.id)?ids:[b.id]; this.startDrag(e,'block',b.id,sarr); },
+        onDbl:(e)=>{ if(isPrev||isImg||isShape)return; e.stopPropagation(); this.setState({editingId:b.id,sel:[b.id]}); setTimeout(()=>this.focusText(b.id),30); },
+        onRotDown:(e)=>this.startDrag(e,'rotate',b.id),
+        onResDown_removed:null,
+        onPillDown:(e)=>e.stopPropagation(),
+        tBold:(e)=>{ e.stopPropagation(); this.setBlockStyle(b.id,{bold:!bold}); },
+        tItalic:(e)=>{ e.stopPropagation(); this.setBlockStyle(b.id,{italic:!curItal}); },
+        sizeDec:(e)=>{ e.stopPropagation(); this.setBlockStyle(b.id,{size:Math.max(8,sizeV-1)}); },
+        sizeInc:(e)=>{ e.stopPropagation(); this.setBlockStyle(b.id,{size:Math.min(160,sizeV+1)}); },
+        openObj:(e)=>{ e.stopPropagation(); this.setState(s=>({objId:s.objId===b.id?null:b.id,sel:[b.id],adv:false})); }
+      };
+    });
+
+    const selObj=(!isPrev&&ids.length===1)?blocks.find(b=>b.single):null;
+    let selPillStyle=null;
+    if(selObj){
+      const sb=doc.blocks.find(x=>x.id===ids[0]);
+      const wrapEl=(typeof document!=='undefined')?document.querySelector('[data-bid="'+ids[0]+'"]'):null;
+      const bw=wrapEl?wrapEl.offsetWidth:sb.w, bh=wrapEl?wrapEl.offsetHeight:(sb.h||80);
+      const th=((sb.rot||0)*Math.PI)/180, cos=Math.cos(th), sin=Math.sin(th);
+      const cx=sb.x+bw/2, cy=sb.y+bh/2;
+      const cornerX=cx+(bw/2)*cos-(bh/2)*sin, cornerY=cy+(bw/2)*sin+(bh/2)*cos;
+      selPillStyle={position:'absolute',left:cornerX+'px',top:cornerY+'px',transform:'translate(-100%, -50%)',display:'flex',alignItems:'center',gap:'5px',background:'#fffaf0',borderRadius:'999px',boxShadow:'0 6px 18px rgba(140,110,70,.28)',padding:'5px 8px',zIndex:60,whiteSpace:'nowrap',touchAction:'none'};
+    }
+
+    const textTools=[
+      {glyph:'T',title:'Heading — drag onto page',glyphStyle:{fontFamily:this.fonts.serif,fontSize:'17px',fontWeight:700,lineHeight:1},onDown:(e)=>this.startSpawn(e,'text','heading'),onKey:(e)=>this.kbSpawn(e,'text','heading')},
+      {glyph:'¶',title:'Paragraph — drag onto page',glyphStyle:{fontFamily:this.fonts.serif,fontSize:'15px',lineHeight:1},onDown:(e)=>this.startSpawn(e,'text','body'),onKey:(e)=>this.kbSpawn(e,'text','body')},
+      {glyph:'“',title:'Pull quote — drag onto page',glyphStyle:{fontFamily:this.fonts.serif,fontSize:'19px',fontStyle:'italic',lineHeight:.6,marginTop:'6px'},onDown:(e)=>this.startSpawn(e,'text','quote'),onKey:(e)=>this.kbSpawn(e,'text','quote')},
+      {glyph:'✳',title:'Caption — drag onto page',glyphStyle:{fontSize:'12px',lineHeight:1},onDown:(e)=>this.startSpawn(e,'text','caption'),onKey:(e)=>this.kbSpawn(e,'text','caption')}
+    ];
+    const ic=(x)=>Object.assign({width:'18px',height:'13px',background:'#6b573c'},x);
+    const shapeTools=[
+      {title:'Square',iconStyle:ic({width:'15px',height:'15px',borderRadius:'3px'}),onDown:(e)=>this.startSpawn(e,'shape','square'),onKey:(e)=>this.kbSpawn(e,'shape','square')},
+      {title:'Circle',iconStyle:ic({width:'15px',height:'15px',borderRadius:'50%'}),onDown:(e)=>this.startSpawn(e,'shape','circle'),onKey:(e)=>this.kbSpawn(e,'shape','circle')},
+      {title:'Triangle',iconStyle:ic({width:'0',height:'0',background:'transparent',borderLeft:'8px solid transparent',borderRight:'8px solid transparent',borderBottom:'14px solid #6b573c'}),onDown:(e)=>this.startSpawn(e,'shape','triangle'),onKey:(e)=>this.kbSpawn(e,'shape','triangle')},
+      {title:'Line',iconStyle:ic({width:'22px',height:'3px',borderRadius:'2px'}),onDown:(e)=>this.startSpawn(e,'shape','line'),onKey:(e)=>this.kbSpawn(e,'shape','line')}
+    ];
+
+    const trayVert=(S.dock.wall==='left'||S.dock.wall==='right');
+    const vw=innerWidth;
+    const thH=trayVert?52:(vw>=1500?146:vw>=1200?128:vw>=980?114:100);
+    const gap=7, clampAr=(ar)=>Math.max(0.62,Math.min(1.9,ar||1.2));
+    const widths=doc.media.map(m=>trayVert?60:Math.round(thH*clampAr(m.ar)));
+    const offsets=[]; let xoff=0; for(let k=0;k<widths.length;k++){ offsets.push(xoff); xoff+=widths[k]+gap; }
+    const trayW=trayVert?66:Math.round(Math.max(200,Math.min(vw*0.44,680)));
+    const trayEl=(typeof document!=='undefined')?document.querySelector('[data-tray]'):null;
+    const tScroll=trayEl?trayEl.scrollLeft:S.trayView.scroll;
+    const tW=(trayEl&&trayEl.clientWidth)?trayEl.clientWidth:(trayVert?66:trayW);
+    const visCenter=trayVert?0:(tScroll+tW/2);
+    const trayItems=doc.media.map((m,i)=>{ const w=widths[i],itemCenter=trayVert?0:(offsets[i]+w/2),norm=trayVert?0:Math.min(1,Math.abs(itemCenter-visCenter)/(tW/2||1)),sc=trayVert?1:(1-norm*0.22),hasSrc=!!m.src; return {
+      label:m.label,hasSrc,noSrc:!hasSrc,
+      imgNode:hasSrc?React.createElement('img',{src:m.src,style:{width:'100%',height:'100%',objectFit:'cover',borderRadius:'10px',pointerEvents:'none',display:'block'}}):null,
+      thumbStyle:{position:'relative',flex:'none',width:w+'px',height:thH+'px',borderRadius:'10px',overflow:'hidden',background:hasSrc?'#efe3cd':'repeating-linear-gradient(45deg,#efe3cd 0 6px,#f9f2e3 6px 12px)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'grab',boxShadow:'0 3px 7px rgba(140,110,70,.22)',transform:'scale('+sc.toFixed(3)+')',transformOrigin:'bottom center',touchAction:'none'},
+      onDown:(e)=>this.startSpawnImg(e,i),onKey:(e)=>this.kbSpawn(e,'image',i)
+    }; });
+
+    const wall=S.dock.wall, free=S.dock.free, vert=trayVert;
+    let anchor;
+    if(free) anchor={left:free.x+'px',top:free.y+'px',transform:'none'};
+    else if(wall==='bottom') anchor={left:'50%',bottom:'16px',transform:'translateX(-50%)'};
+    else if(wall==='top') anchor={left:'50%',top:'16px',transform:'translateX(-50%)'};
+    else if(wall==='left') anchor={left:'16px',top:'50%',transform:'translateY(-50%)'};
+    else anchor={right:'16px',top:'50%',transform:'translateY(-50%)'};
+    const dockStyle=Object.assign({position:'fixed',zIndex:33,background:'#fffaf0',borderRadius:'16px',boxShadow:'0 8px 26px rgba(140,110,70,.28)',display:'flex',flexDirection:vert?'row':'column',alignItems:'center',gap:'1px',opacity:isPrev?0:1,pointerEvents:isPrev?'none':'auto',transition:free?'none':'left .42s cubic-bezier(.34,1.3,.5,1), top .42s cubic-bezier(.34,1.3,.5,1), right .42s cubic-bezier(.34,1.3,.5,1), bottom .42s cubic-bezier(.34,1.3,.5,1), opacity .4s ease'},anchor);
+    const lipStyle=Object.assign({background:'#eaddc4',borderRadius:'3px',cursor:'grab',flex:'none',touchAction:'none'}, vert?{width:'4px',height:'30px',margin:'9px 3px 9px 6px'}:{width:'30px',height:'4px',margin:'6px 9px 1px'});
+    const innerStyle={display:'flex',flexDirection:vert?'column':'row',alignItems:'center',gap:'9px',padding:vert?'2px 8px 10px 8px':'2px 12px 8px 12px'};
+    const iconRowStyle={display:'flex',flexDirection:vert?'column':'row',gap:'6px'};
+    const dividerStyle=Object.assign({background:'#eaddc4',flex:'none',borderRadius:'2px'}, vert?{height:'1.5px',width:'72%'}:{width:'1.5px',alignSelf:'stretch'});
+    const trayFH=trayVert?trayW:34, over=Math.max(0,thH-trayFH);
+    const trayStyle=Object.assign({display:'flex',gap:gap+'px',cursor:'grab',touchAction:'none'}, trayVert?{flexDirection:'column',width:'66px',height:'clamp(150px,34vh,320px)',overflowY:'auto',overflowX:'hidden'}:{flexDirection:'row',alignItems:'flex-end',alignSelf:'center',height:thH+'px',width:trayW+'px',overflowX:'auto',overflowY:'hidden',marginTop:'-'+Math.round(over*0.86)+'px',marginBottom:'-'+Math.round(over*0.14)+'px'});
+
+    // OBJECT PANEL
+    const ob=S.objId!=null?doc.blocks.find(b=>b.id===S.objId):null;
+    const objOpen=!!(ob&&ids.length===1&&ids[0]===S.objId&&!isPrev);
+    let opVals={};
+    if(objOpen){
+      const isTx=ob.type!=='image'&&ob.type!=='shape', isImg=ob.type==='image', isSh=ob.type==='shape';
+      const gs=doc.styles[ob.type]||{}; const curFont=ob.fontKey||gs.fontKey, curColor=ob.color||gs.color;
+      const lockA=(isImg||isSh)?(ob.lockAspect!=null?ob.lockAspect:isImg):false;
+      const opSect={display:'flex',flexDirection:'column',gap:'7px'};
+      const opLbl={fontFamily:'Nunito,sans-serif',fontSize:'9px',fontWeight:800,letterSpacing:'.1em',color:'#b8944e'};
+      const opStep={width:'26px',height:'26px',borderRadius:'8px',background:'#f6f0e4',color:'#6b573c',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'15px',fontWeight:800,cursor:'pointer'};
+      const opNum={fontFamily:'Nunito,sans-serif',fontSize:'12px',fontWeight:800,color:'#6b573c',minWidth:'40px',textAlign:'center'};
+      const opMini={fontFamily:'Nunito,sans-serif',fontSize:'9px',fontWeight:800,color:'#a08654',width:'40px'};
+      const opTiny={fontFamily:'Nunito,sans-serif',fontSize:'8.5px',fontWeight:800,letterSpacing:'.08em',color:'#b8944e',marginBottom:'3px'};
+      const fontChip=(active,fam)=>({fontFamily:fam,fontSize:'11.5px',fontWeight:700,padding:'5px 9px',borderRadius:'8px',cursor:'pointer',background:active?acc:'#f6f0e4',color:active?'#fffaf0':'#6b573c'});
+      const colDot=(active,c,big)=>({width:big?'22px':'20px',height:big?'22px':'20px',borderRadius:'50%',background:c,cursor:'pointer',boxShadow:active?'0 0 0 2.5px #fffaf0, 0 0 0 5px '+acc:'0 0 0 2px #fffaf0'});
+      const layerBtn={flex:1,textAlign:'center',fontFamily:'Nunito,sans-serif',fontSize:'11px',fontWeight:800,padding:'8px 0',borderRadius:'9px',cursor:'pointer',background:'#f6f0e4',color:'#6b573c'};
+      const tgl=(on,it)=>({width:'26px',height:'26px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontFamily:this.fonts.serif,fontStyle:it?'italic':'normal',fontSize:'13px',fontWeight:800,background:on?acc:'#f6f0e4',color:on?'#fffaf0':'#6b573c'});
+      const curAlign=ob.align||gs.align||'left';
+      const alignIcon=(k,on)=>{ const col=on?'#fffaf0':'#8a7250'; const ws=k==='justify'?['100%','100%','100%']:['100%','60%','82%']; return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:'2.5px',width:'15px',alignItems:k==='center'?'center':(k==='right'?'flex-end':'flex-start')}}, ws.map((w,i)=>React.createElement('div',{key:i,style:{height:'2px',width:w,background:col,borderRadius:'2px'}}))); };
+      const alignBtn=(on)=>({flex:1,height:'30px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',background:on?acc:'#f6f0e4'});
+      const alignDefs=['left','center','right','justify'];
+      opVals={
+        objTitle:isImg?'Image':(isSh?'Shape':(ob.type.charAt(0).toUpperCase()+ob.type.slice(1))),
+        closeObj:()=>this.setState({objId:null}),
+        opIsText:isTx, opIsImage:isImg, opIsShape:isSh,
+        opSect, opLbl, opStep, opNum, opMini, opTiny,
+        opBtn:{fontFamily:'Nunito,sans-serif',fontSize:'12px',fontWeight:800,padding:'9px 0',textAlign:'center',borderRadius:'10px',cursor:'pointer',background:'#f2d791',color:'#7a5c1f'},
+        stopProp:(e)=>e.stopPropagation(),
+        // text
+        opFonts:this.fontList.map(f=>({label:f.label,style:fontChip(curFont===f.key,this.fonts[f.key]),onPick:()=>this.setBlockStyle(ob.id,{fontKey:f.key})})),
+        opColors:this.swatchColors.map(c=>({style:colDot(curColor===c,c),aria:'Text colour '+c,onPick:()=>this.setBlockStyle(ob.id,{color:c})})),
+        opAligns:alignDefs.map(a=>({icon:alignIcon(a,curAlign===a),style:alignBtn(curAlign===a),aria:'Align '+a,onPick:()=>this.setBlockStyle(ob.id,{align:a})})),
+        advBtn:{fontFamily:'Nunito,sans-serif',fontSize:'11px',fontWeight:800,padding:'8px 10px',borderRadius:'9px',cursor:'pointer',background:S.adv?acc:'#faf4e8',color:S.adv?'#fffaf0':'#a8823e',textAlign:'center'},
+        advLabel:(S.adv?'▾ ':'▸ ')+'Advanced — edit all '+ob.type+' styles',
+        adv:S.adv, advType:ob.type.toUpperCase(), toggleAdv:()=>this.setState(s=>({adv:!s.adv})),
+        gFonts:this.fontList.map(f=>({label:f.label,style:fontChip(gs.fontKey===f.key,this.fonts[f.key]),onPick:()=>this.setGlobal(ob.type,{fontKey:f.key})})),
+        gSize:gs.size, gSizeDec:()=>this.setGlobal(ob.type,{size:Math.max(8,gs.size-1)}), gSizeInc:()=>this.setGlobal(ob.type,{size:Math.min(120,gs.size+1)}),
+        gLh:(gs.lh||1).toFixed(2), gLhDec:()=>this.setGlobal(ob.type,{lh:Math.max(0.9,+((gs.lh||1)-0.05).toFixed(2))}), gLhInc:()=>this.setGlobal(ob.type,{lh:Math.min(2.4,+((gs.lh||1)+0.05).toFixed(2))}),
+        gBoldStyle:tgl(gs.bold,false), gItalStyle:tgl(gs.italic,true), gBold:()=>this.setGlobal(ob.type,{bold:!gs.bold}), gItalic:()=>this.setGlobal(ob.type,{italic:!gs.italic}),
+        gColors:this.swatchColors.map(c=>({style:colDot(gs.color===c,c),aria:'Colour '+c,onPick:()=>this.setGlobal(ob.type,{color:c})})),
+        gAligns:alignDefs.map(a=>({icon:alignIcon(a,(gs.align||'left')===a),style:alignBtn((gs.align||'left')===a),aria:'Align '+a,onPick:()=>this.setGlobal(ob.type,{align:a})})),
+        // shape
+        opShapeColors:this.shapeColors.map(c=>({style:colDot(ob.color===c,c,true),aria:'Fill colour '+c,onPick:()=>this.setBlockStyle(ob.id,{color:c})})),
+        radVal:(ob.radius!=null?ob.radius:10), radDec:()=>this.setBlockStyle(ob.id,{radius:Math.max(0,(ob.radius!=null?ob.radius:10)-2)}), radInc:()=>this.setBlockStyle(ob.id,{radius:Math.min(120,(ob.radius!=null?ob.radius:10)+2)}),
+        // image
+        replaceImg:()=>this.pickFiles(ob.id),
+        altVal:ob.alt||'', onAlt:(e)=>this.setBlockStyle(ob.id,{alt:e.target.value},false),
+        fitCover:()=>this.setBlockStyle(ob.id,{fit:'cover'}), fitContain:()=>this.setBlockStyle(ob.id,{fit:'contain'}),
+        fitCoverStyle:{flex:1,textAlign:'center',fontFamily:'Nunito,sans-serif',fontSize:'11px',fontWeight:800,padding:'7px 0',borderRadius:'8px',cursor:'pointer',background:(ob.fit||'cover')==='cover'?acc:'#f6f0e4',color:(ob.fit||'cover')==='cover'?'#fffaf0':'#6b573c'},
+        fitContainStyle:{flex:1,textAlign:'center',fontFamily:'Nunito,sans-serif',fontSize:'11px',fontWeight:800,padding:'7px 0',borderRadius:'8px',cursor:'pointer',background:ob.fit==='contain'?acc:'#f6f0e4',color:ob.fit==='contain'?'#fffaf0':'#6b573c'},
+        // size/angle
+        opHasH:(isImg||isSh), wVal:ob.w, hVal:ob.h||0, rotVal:ob.rot||0,
+        lockAspect:lockA, lockLabel:lockA?'🔒 Aspect locked · 1 handle':'⤢ Free resize · 4 handles',
+        lockBtnStyle:{fontFamily:'Nunito,sans-serif',fontSize:'11.5px',fontWeight:800,padding:'9px 0',textAlign:'center',borderRadius:'10px',cursor:'pointer',background:lockA?acc:'#f6f0e4',color:lockA?'#fffaf0':'#6b573c'},
+        toggleLock:()=>this.setBlockStyle(ob.id,{lockAspect:!lockA}),
+        onW:(e)=>{ const v=parseInt(e.target.value,10); if(isNaN(v))return; const nw=Math.max(20,v); if(lockA&&ob.h){ this.setBlockStyle(ob.id,{w:nw,h:Math.max(20,Math.round(nw*(ob.h/ob.w)))},false); } else this.setBlockStyle(ob.id,{w:nw},false); },
+        onH:(e)=>{ const v=parseInt(e.target.value,10); if(isNaN(v))return; const nh=Math.max(20,v); if(lockA&&ob.w){ this.setBlockStyle(ob.id,{h:nh,w:Math.max(20,Math.round(nh*(ob.w/ob.h)))},false); } else this.setBlockStyle(ob.id,{h:nh},false); },
+        onRot:(e)=>{ const v=parseInt(e.target.value,10); if(!isNaN(v)) this.setBlockStyle(ob.id,{rot:v},false); },
+        opLayerBtn:layerBtn,
+        opFront:()=>this.toFront(ob.id), opBack:()=>this.toBack(ob.id), opForward:()=>this.forwardOne(ob.id), opBackward:()=>this.backOne(ob.id), opDup:()=>{ this.setState({sel:[ob.id]},()=>this.duplicateSel()); },
+        opDelBtn:{fontFamily:'Nunito,sans-serif',fontSize:'12px',fontWeight:800,padding:'10px 0',textAlign:'center',borderRadius:'10px',cursor:'pointer',background:'#f5b8a9',color:'#7a3323'},
+        opDelete:()=>this.deleteBlock(ob.id)
+      };
+    }
+
+    const fmt=S.fmt, fmtOpen=!!(fmt&&S.editingId!=null&&!isPrev);
+    const fmtBtn={width:'26px',height:'26px',borderRadius:'7px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontFamily:this.fonts.serif,fontSize:'13px',fontWeight:800,background:'#f6f0e4',color:'#4a3a28'};
+    // rich-text formatting is handled with the Selection API (applyInlineTag / createLink) — no execCommand
+
+    return {
+      blocks, textTools, shapeTools, trayItems, pageRef:this.pageRef, fileRef:this.fileRef,
+      selPillOn:!!selObj, selBlock:selObj||{}, selPillStyle,
+      isEmpty:doc.blocks.length===0&&!isPrev,
+      guidesOn:S.guides&&!isPrev, snapX:S.snapX, snapY:S.snapY,
+      snapXStyle:{position:'absolute',top:0,bottom:0,left:(S.snapX||0)+'px',width:'2px',background:acc,pointerEvents:'none',zIndex:6,boxShadow:'0 0 6px rgba(232,161,60,.6)',animation:'snapPop .12s ease'},
+      snapYStyle:{position:'absolute',left:0,right:0,top:(S.snapY||0)+'px',height:'2px',background:acc,pointerEvents:'none',zIndex:6,boxShadow:'0 0 6px rgba(232,161,60,.6)',animation:'snapPop .12s ease'},
+      spawnGhost:!!S.spawnGhost, ghostLabel:S.spawnGhost?S.spawnGhost.label:'',
+      ghostStyle:S.spawnGhost?{position:'fixed',left:(S.spawnGhost.x+16)+'px',top:(S.spawnGhost.y+16)+'px',zIndex:60,pointerEvents:'none',maxWidth:'180px',background:'#fffaf0',border:'2px dashed '+acc,borderRadius:'10px',padding:'6px 11px',fontFamily:this.fonts.serif,fontSize:'12px',fontWeight:700,color:'#4a3a28',boxShadow:'0 8px 22px rgba(140,110,70,.32)',textTransform:'capitalize'}:{},
+      onMove, onUp, onWheel:(e)=>this.onWheel(e),
+      deskStyle:{position:'absolute',inset:0,background:'#f6f0e4',backgroundImage:'radial-gradient(rgba(140,110,70,.22) 1.2px, transparent 1.2px)',backgroundSize:grid+'px '+grid+'px',opacity:isPrev?0:1,transition:'opacity .6s ease'},
+      pageOuterStyle:{position:'absolute',left:'50%',top:isPrev?'26px':'0',transform:'translateX(-50%)',width:'min('+pw+'px, calc(100vw - 56px))',height:isPrev?'calc(100% - 52px)':'100%',borderRadius:isPrev?'16px':'0',background:isPrev?'#fffaf0':'transparent',boxShadow:isPrev?'0 24px 60px rgba(140,110,70,.35)':'none',overflow:isPrev?'hidden':'visible',display:'flex',flexDirection:'column',transition:'all .6s cubic-bezier(.4,0,.2,1)',zIndex:2},
+      pageSurfaceStyle:{position:'relative',flex:1,overflowY:'auto',overflowX:z>1?'auto':'hidden',background:'transparent'},
+      canvasStyle:{position:'relative',width:(100/z)+'%',height:(canvasH)+'px',transform:'scale('+z+')',transformOrigin:'0 0'},
+      footerStyle:{position:'absolute',left:0,right:0,top:(canvasH-150)+'px',textAlign:'center',fontFamily:this.fonts.serif,fontStyle:'italic',fontSize:'13px',color:'#c9b48c',opacity:isPrev?1:0,transition:'opacity .5s ease .3s',pointerEvents:'none'},
+      backBtnStyle:{position:'fixed',top:'14px',left:'14px',zIndex:36,height:'40px',padding:'0 16px',borderRadius:'11px',background:acc,color:'#fffaf0',display:'flex',alignItems:'center',fontSize:'12px',fontWeight:800,cursor:'pointer',boxShadow:'0 6px 18px rgba(140,110,70,.3)',opacity:isPrev?1:0,pointerEvents:isPrev?'auto':'none',transform:isPrev?'translateY(0)':'translateY(-70px)',transition:'opacity .4s ease, transform .5s cubic-bezier(.34,1.3,.5,1)'},
+      islandStyle:{position:'fixed',top:'14px',right:'14px',zIndex:35,display:'flex',alignItems:'center',gap:'7px',background:'#fffaf0',borderRadius:'13px',padding:'6px 8px 6px 8px',boxShadow:'0 6px 18px rgba(140,110,70,.24)',opacity:isPrev?0:1,pointerEvents:isPrev?'none':'auto',transform:isPrev?'translateY(-70px)':'translateY(0)',transition:'opacity .4s ease, transform .5s ease'},
+      islandSep:{width:'1.5px',height:'20px',background:'#eaddc4',borderRadius:'2px'},
+      undoStyle:{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:this.past.length?'pointer':'default',fontSize:'15px',fontWeight:800,background:'#f6f0e4',color:this.past.length?'#6b573c':'#d9cbae'},
+      redoStyle:{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:this.future.length?'pointer':'default',fontSize:'15px',fontWeight:800,background:'#f6f0e4',color:this.future.length?'#6b573c':'#d9cbae'},
+      undo:()=>this.undo(), redo:()=>this.redo(),
+      zoomed:z!==1, zoomLabel:Math.round(z*100)+'%', resetZoom:()=>this.setState({zoom:1}),
+      zoomChip:{height:'28px',padding:'0 9px',borderRadius:'8px',display:'flex',alignItems:'center',cursor:'pointer',fontFamily:'Nunito,sans-serif',fontSize:'11px',fontWeight:800,background:'#f2d791',color:'#7a5c1f'},
+      guidesChip:{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'13px',fontWeight:800,background:S.guides?acc:'#f6f0e4',color:S.guides?'#fffaf0':'#a08654'},
+      toggleGuides:()=>this.setState(s=>({guides:!s.guides})),
+      trashStyle:{width:'34px',height:'34px',borderRadius:'9px',background:(S.drag&&S.drag.kind==='block')?'#f5b8a9':'#f6f0e4',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'15px',transition:'background .2s',cursor:'default'},
+      previewBtnStyle:{height:'34px',padding:'0 15px',borderRadius:'9px',background:acc,color:'#fffaf0',display:'flex',alignItems:'center',fontSize:'12px',fontWeight:800,cursor:'pointer'},
+      dockStyle, lipStyle, innerStyle, iconRowStyle, dividerStyle, trayStyle,
+      dockOpen:!S.dock.min,
+      onDockDown:(e)=>this.startDrag(e,'dock'), toggleDock:(e)=>this.toggleDockMin(e),
+      onTrayDown:(e)=>this.startDrag(e,'tray'),
+      onTrayScroll:(e)=>this.setState({trayView:{scroll:e.target.scrollLeft,w:e.target.clientWidth}}),
+      onPageDown:(e)=>{ if(isPrev)return; if(this.space){ this.startDrag(e,'pan'); return; } this.setState({sel:[],editingId:null,objId:null}); },
+      pickFiles:()=>this.pickFiles(), onFiles:(e)=>this.onFiles(e),
+      addMediaStyle:{flex:'none',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:'10px',background:'#f9f3e6',border:'2px dashed #e0c48c',alignSelf:'center',width:trayVert?'60px':'38px',height:'38px',transition:'background .15s, border-color .15s'},
+      plusStyle:{width:'16px',height:'16px',flex:'none',background:'#c9880f',WebkitMask:'linear-gradient(#000 0 0) center/16px 4px no-repeat, linear-gradient(#000 0 0) center/4px 16px no-repeat',mask:'linear-gradient(#000 0 0) center/16px 4px no-repeat, linear-gradient(#000 0 0) center/4px 16px no-repeat'},
+      enterPreview:()=>this.setState({mode:'preview',anim:true,sel:[],editingId:null,objId:null}),
+      exitPreview:()=>this.setState({mode:'edit',anim:true}),
+      objOpen, objStyle:{position:'fixed',top:0,right:0,height:'100%',width:'clamp(250px,27vw,340px)',background:'#fffaf0',boxShadow:'-12px 0 34px rgba(140,110,70,.26)',borderLeft:'1.5px solid #f0e6d2',zIndex:50,display:'flex',flexDirection:'column'},
+      ...opVals,
+      fmtOpen, fmtStyle:{position:'fixed',left:(fmt?fmt.x:0)+'px',top:(fmt?fmt.y:0)+'px',transform:'translate(-50%,-135%)',zIndex:70,display:'flex',gap:'4px',background:'#fffaf0',borderRadius:'10px',padding:'5px',boxShadow:'0 8px 22px rgba(140,110,70,.32)'},
+      fmtBtn, fmtBtnI:Object.assign({},fmtBtn,{fontStyle:'italic'}), fmtBtnL:Object.assign({},fmtBtn,{fontSize:'12px'}),
+      fmtBold:(e)=>{ e.preventDefault(); this.applyInlineTag('strong'); }, fmtItalic:(e)=>{ e.preventDefault(); this.applyInlineTag('em'); }, fmtLink:(e)=>{ e.preventDefault(); const url=window.prompt('Link URL'); if(url) this.createLink(url); }
+    };
+  }
+  startSpawn(e,stype,val){ e.stopPropagation(); this.setState({drag:{kind:'spawn',stype,ttype:stype==='text'?val:null,shape:stype==='shape'?val:null,mx:e.clientX,my:e.clientY,armed:false,scrolled:false}}); }
+  startSpawnImg(e,mi){ e.stopPropagation(); const tr=e.currentTarget.parentElement; this.setState({drag:{kind:'spawn',stype:'image',media:mi,mx:e.clientX,my:e.clientY,armed:false,scrolled:false,el:tr,sl0:tr?tr.scrollLeft:0}}); }
+}
+</script>
+</body>
+</html>

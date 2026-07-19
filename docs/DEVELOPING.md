@@ -264,3 +264,13 @@ and `@astrojs/sitemap`.
 explicitly — depending on someone else's transitive dependency is how builds
 break on an unrelated upgrade. Same reasoning keeps the remark plugin from
 importing `unist-util-visit`.
+
+## The design prototype (`/dev/editor`)
+
+`layout-editor/` holds the Claude Design prototype the canvas editor's
+chrome came from. `npm run dev` serves it at
+[localhost:4321/dev/editor](http://localhost:4321/dev/editor) — dev server
+only, via the `dev-design-editor` hook in `astro.config.mjs`; it never
+reaches a build or the live site. It needs the network (its runtime loads
+React from unpkg), and its free-pixel model is the *prototype's*, not the
+site's — treat it as a design reference, not a spec.

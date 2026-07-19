@@ -19,3 +19,7 @@ public/images/reviews/optimized/
 node_modules/
 .DS_Store
 .claude/
+
+# Design prototypes arrive as Claude Design zip exports; the extracted
+# folder is tracked, the zip itself is not.
+*.zip

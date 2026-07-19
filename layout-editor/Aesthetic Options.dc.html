@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Archivo:wght@500;700;900&family=Nunito:wght@600;800&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}a{color:#d95f3b}a:hover{color:#b34526}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}</style></helmet>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Six aesthetic directions for the blog layout editor — same vignette (canvas + selected block + image slot + dock), restyled</span></div>
+<div class="dv-opts">
+
+<!-- 1a EDITORIAL INK -->
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Editorial ink — hairlines, elegant serif, quiet coral</div>
+<div class="dv-card" style="width:380px">
+<div style="position:relative;height:300px;background:#fcfbf7;background-image:radial-gradient(rgba(28,26,22,.14) 1px,transparent 1px);background-size:22px 22px;font-family:'IBM Plex Mono',monospace;color:#1c1a16;overflow:hidden">
+  <div style="position:absolute;top:0;left:0;right:0;height:30px;border-bottom:1px solid rgba(28,26,22,.2);background:#fcfbf7;display:flex;align-items:center;justify-content:space-between;padding:0 12px">
+    <span style="font-size:9px;letter-spacing:.18em;font-weight:500">BUTTER &amp; THYME — DRAFT</span><span style="font-size:9px;color:#a49c8c">7 blocks</span>
+  </div>
+  <div style="position:absolute;top:52px;left:26px;width:210px;border:1px dashed rgba(28,26,22,.45);padding:8px 10px;background:rgba(252,251,247,.7)">
+    <span style="position:absolute;top:-16px;left:-1px;font-size:8px;letter-spacing:.14em;color:#c14e2c">HEADING · SELECTED</span>
+    <div style="font-family:'Source Serif 4',serif;font-size:19px;font-weight:600;line-height:1.15">Brown-Butter Gnocchi, From Scratch</div>
+    <div style="position:absolute;right:-4px;bottom:-4px;width:7px;height:7px;background:#c14e2c;border-radius:50%"></div>
+    <div style="position:absolute;top:-22px;left:50%;width:6px;height:6px;border:1px solid #1c1a16;border-radius:50%;background:#fcfbf7"></div>
+  </div>
+  <div style="position:absolute;top:118px;left:150px;width:150px;height:96px;border:1px dashed rgba(28,26,22,.35);background:repeating-linear-gradient(45deg,#f1ede2 0 7px,#faf8f1 7px 14px);display:flex;align-items:center;justify-content:center;transform:rotate(2deg)">
+    <span style="font-size:8.5px;color:#8a8375">hero shot · gif ok</span>
+  </div>
+  <div style="position:absolute;top:140px;left:26px;width:112px;border:1px dashed rgba(28,26,22,.25);padding:7px 8px;font-family:'Source Serif 4',serif;font-size:9px;line-height:1.5;color:#4a453c">Sage crisped in the same pan, a spoon of pasta water, nothing else…</div>
+  <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:#fcfbf7;border:1px solid #1c1a16;padding:7px 12px;box-shadow:0 2px 0 rgba(28,26,22,.9)">
+    <span style="font-family:'Source Serif 4',serif;font-size:13px">T</span><span style="font-family:'Source Serif 4',serif;font-size:13px;font-style:italic">“</span><span style="font-size:9px">Aa</span>
+    <span style="width:1px;height:14px;background:rgba(28,26,22,.25)"></span>
+    <span style="width:16px;height:12px;background:repeating-linear-gradient(45deg,#eee9dc 0 3px,#f8f5ec 3px 6px);border:1px solid rgba(28,26,22,.4)"></span>
+    <span style="width:16px;height:12px;background:repeating-linear-gradient(45deg,#eee9dc 0 3px,#f8f5ec 3px 6px);border:1px solid rgba(28,26,22,.4)"></span>
+    <span style="width:1px;height:14px;background:rgba(28,26,22,.25)"></span>
+    <span style="font-size:8.5px;letter-spacing:.12em;color:#fff;background:#c14e2c;padding:3px 8px">PREVIEW</span>
+  </div>
+</div></div></div>
+
+<!-- 1b WARM PAPER STUDIO -->
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Warm paper studio — cream, soft shadows, rounded, amber</div>
+<div class="dv-card" style="width:380px">
+<div style="position:relative;height:300px;background:#f6f0e4;background-image:radial-gradient(rgba(140,110,70,.22) 1.2px,transparent 1.2px);background-size:20px 20px;font-family:'Nunito',sans-serif;color:#4a3a28;overflow:hidden">
+  <div style="position:absolute;top:10px;left:12px;display:flex;gap:6px;align-items:center;background:#fffaf0;border-radius:20px;padding:5px 12px;box-shadow:0 3px 10px rgba(140,110,70,.18)">
+    <span style="width:8px;height:8px;background:#e8a13c;border-radius:50%"></span><span style="font-size:9.5px;font-weight:800">butter &amp; thyme · draft</span>
+  </div>
+  <div style="position:absolute;top:54px;left:24px;width:215px;border:2px dashed #e0b877;border-radius:12px;padding:10px 12px;background:rgba(255,250,240,.85);box-shadow:0 4px 14px rgba(140,110,70,.12)">
+    <span style="position:absolute;top:-9px;left:12px;font-size:8px;font-weight:800;letter-spacing:.08em;color:#fff;background:#e8a13c;border-radius:8px;padding:2px 8px">HEADING ✎</span>
+    <div style="font-family:'Source Serif 4',serif;font-size:19px;font-weight:700;line-height:1.15">Brown-Butter Gnocchi, From Scratch</div>
+    <div style="position:absolute;right:-7px;bottom:-7px;width:14px;height:14px;background:#fffaf0;border:2px solid #e8a13c;border-radius:50%;box-shadow:0 2px 5px rgba(140,110,70,.3)"></div>
+  </div>
+  <div style="position:absolute;top:126px;left:158px;width:150px;height:94px;border-radius:14px;background:repeating-linear-gradient(45deg,#efe3cd 0 8px,#f9f2e3 8px 16px);box-shadow:0 5px 16px rgba(140,110,70,.2);display:flex;align-items:center;justify-content:center;transform:rotate(-2deg)">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#a08654">hero shot · gif ok</span>
+  </div>
+  <div style="position:absolute;top:150px;left:24px;width:118px;border:2px dashed rgba(224,184,119,.6);border-radius:10px;padding:8px 10px;background:rgba(255,250,240,.7);font-family:'Source Serif 4',serif;font-size:9px;line-height:1.5;color:#6b573c">Sage crisped in the same pan, a spoon of pasta water…</div>
+  <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:#fffaf0;border-radius:16px;padding:8px 14px;box-shadow:0 6px 18px rgba(140,110,70,.25)">
+    <span style="font-family:'Source Serif 4',serif;font-size:14px;font-weight:700">T</span><span style="font-family:'Source Serif 4',serif;font-size:14px;font-style:italic">“</span><span style="font-size:10px;font-weight:800">Aa</span>
+    <span style="width:1.5px;height:16px;background:#eaddc4;border-radius:2px"></span>
+    <span style="width:18px;height:14px;border-radius:5px;background:repeating-linear-gradient(45deg,#efe3cd 0 3px,#f9f2e3 3px 6px)"></span>
+    <span style="width:18px;height:14px;border-radius:5px;background:repeating-linear-gradient(45deg,#efe3cd 0 3px,#f9f2e3 3px 6px)"></span>
+    <span style="width:1.5px;height:16px;background:#eaddc4;border-radius:2px"></span>
+    <span style="font-size:9px;font-weight:800;color:#fff;background:#e8a13c;border-radius:10px;padding:4px 10px">Preview ▸</span>
+  </div>
+</div></div></div>
+
+<!-- 1c SWISS MINIMAL -->
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Swiss minimal — stark grid, bold sans, black + coral, sharp</div>
+<div class="dv-card" style="width:380px">
+<div style="position:relative;height:300px;background:#f7f6f3;background-image:radial-gradient(rgba(0,0,0,.25) 1px,transparent 1px);background-size:24px 24px;font-family:'Archivo',sans-serif;color:#0d0d0d;overflow:hidden">
+  <div style="position:absolute;top:0;left:0;right:0;height:32px;background:#0d0d0d;color:#f7f6f3;display:flex;align-items:center;justify-content:space-between;padding:0 12px">
+    <span style="font-size:9.5px;font-weight:900;letter-spacing:.14em">BUTTER&amp;THYME — EDITOR</span><span style="font-size:9px;font-weight:700;color:#ff4d26">DRAFT 03</span>
+  </div>
+  <div style="position:absolute;top:54px;left:24px;width:220px;outline:1.5px dashed #0d0d0d;outline-offset:3px;padding:2px">
+    <span style="position:absolute;top:-18px;left:0;font-size:8px;font-weight:900;letter-spacing:.14em;background:#ff4d26;color:#fff;padding:2px 6px">H1</span>
+    <div style="font-size:21px;font-weight:900;line-height:1.02;text-transform:uppercase;letter-spacing:-.01em">Brown-Butter Gnocchi, From Scratch</div>
+    <div style="position:absolute;right:-8px;bottom:-8px;width:9px;height:9px;background:#ff4d26"></div>
+    <div style="position:absolute;left:-8px;top:-8px;width:9px;height:9px;background:#0d0d0d"></div>
+  </div>
+  <div style="position:absolute;top:138px;left:162px;width:152px;height:96px;outline:1.5px dashed rgba(13,13,13,.5);outline-offset:3px;background:repeating-linear-gradient(90deg,#e9e7e1 0 8px,#f2f0eb 8px 16px);display:flex;align-items:center;justify-content:center">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#666">IMG_01 / GIF</span>
+  </div>
+  <div style="position:absolute;top:150px;left:24px;width:116px;padding:2px;outline:1.5px dashed rgba(13,13,13,.3);outline-offset:3px;font-size:9px;line-height:1.45;font-weight:500;color:#333">Sage crisped in the same pan, a spoon of pasta water, nothing else.</div>
+  <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:stretch;background:#f7f6f3;border:1.5px solid #0d0d0d">
+    <span style="padding:7px 10px;font-size:11px;font-weight:900;border-right:1.5px solid #0d0d0d">T</span>
+    <span style="padding:7px 10px;font-size:11px;font-weight:900;font-style:italic;border-right:1.5px solid #0d0d0d">“</span>
+    <span style="padding:7px 10px;font-size:9.5px;font-weight:900;border-right:1.5px solid #0d0d0d">Aa</span>
+    <span style="width:22px;background:repeating-linear-gradient(90deg,#e9e7e1 0 4px,#f2f0eb 4px 8px);border-right:1.5px solid #0d0d0d"></span>
+    <span style="width:22px;background:repeating-linear-gradient(90deg,#e9e7e1 0 4px,#f2f0eb 4px 8px);border-right:1.5px solid #0d0d0d"></span>
+    <span style="padding:7px 10px;font-size:9px;font-weight:900;letter-spacing:.1em;background:#ff4d26;color:#fff">PREVIEW→</span>
+  </div>
+</div></div></div>
+
+<!-- 1d SOFT TACTILE -->
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Soft tactile — pastel chips, chunky rounded handles, playful-calm</div>
+<div class="dv-card" style="width:380px">
+<div style="position:relative;height:300px;background:#f4f2ee;background-image:radial-gradient(rgba(90,100,120,.18) 1.3px,transparent 1.3px);background-size:19px 19px;font-family:'Nunito',sans-serif;color:#3a3f4a;overflow:hidden">
+  <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:#fff;border-radius:14px;padding:5px 14px;box-shadow:0 2px 0 #d8d4cc">
+    <span style="font-size:9.5px;font-weight:800;color:#5a6478">my kitchen blog ✳ draft</span>
+  </div>
+  <div style="position:absolute;top:52px;left:26px;width:212px;border:2.5px dashed #9db4e8;border-radius:14px;padding:10px 12px;background:#fff">
+    <span style="position:absolute;top:-11px;left:14px;font-size:8.5px;font-weight:800;color:#3a3f4a;background:#cdd9f5;border-radius:8px;padding:2px 9px">heading</span>
+    <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;line-height:1.15">Brown-Butter Gnocchi, From Scratch</div>
+    <div style="position:absolute;right:-9px;bottom:-9px;width:16px;height:16px;background:#f5b8a9;border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 0 #d8d4cc"></div>
+    <div style="position:absolute;top:-24px;left:50%;width:12px;height:12px;background:#b8dbc9;border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 0 #d8d4cc"></div>
+  </div>
+  <div style="position:absolute;top:128px;left:158px;width:150px;height:94px;border-radius:16px;background:repeating-linear-gradient(45deg,#e7ecf4 0 8px,#f3f6fa 8px 16px);border:2.5px dashed rgba(157,180,232,.6);display:flex;align-items:center;justify-content:center;transform:rotate(2deg)">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8a93a8">hero shot / gif</span>
+  </div>
+  <div style="position:absolute;top:152px;left:26px;width:114px;border:2.5px dashed rgba(184,219,201,.9);border-radius:12px;padding:8px 10px;background:#fff;font-size:9px;line-height:1.5;font-weight:600;color:#5a6478">Sage crisped in the same pan, a spoon of pasta water…</div>
+  <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:9px;background:#fff;border-radius:18px;padding:8px 14px;box-shadow:0 3px 0 #d8d4cc">
+    <span style="width:24px;height:24px;border-radius:9px;background:#cdd9f5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">T</span>
+    <span style="width:24px;height:24px;border-radius:9px;background:#b8dbc9;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:12px;font-style:italic">“</span>
+    <span style="width:24px;height:24px;border-radius:9px;background:#f2e3b8;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800">Aa</span>
+    <span style="width:24px;height:24px;border-radius:9px;background:repeating-linear-gradient(45deg,#e7ecf4 0 4px,#f3f6fa 4px 8px)"></span>
+    <span style="width:24px;height:24px;border-radius:9px;background:repeating-linear-gradient(45deg,#e7ecf4 0 4px,#f3f6fa 4px 8px)"></span>
+    <span style="font-size:9.5px;font-weight:800;color:#fff;background:#f5a08c;border-radius:11px;padding:5px 12px;box-shadow:0 2px 0 #d8836e">preview ✦</span>
+  </div>
+</div></div></div>
+
+<!-- 1e DARK STUDIO -->
+<div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Dark studio —
+</x-dc>
+</body>
+</html>
