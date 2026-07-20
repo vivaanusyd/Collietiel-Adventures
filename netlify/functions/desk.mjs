@@ -24,12 +24,12 @@ import { SESSION_COOKIE, readCookies, verifySession } from '../lib/session.mjs';
 // Read once per cold start rather than per request — it's ~1.9 MB.
 let cachedPage = null;
 
-// Both homes the page can have: public/ while the gate is off (served
-// statically, which is why it's in public/ at all), functions-assets/ while
-// the gate is on (out of the CDN's reach, so this function is the only way
-// to get it). Trying both means switching the gate on or off can't leave
+// Both homes the page can have: functions-assets/ while the gate is on
+// (out of the CDN's reach, so this function is the only way to get it) —
+// which is where it lives now — and public/ while the gate is off, served
+// statically. Trying both means switching the gate on or off can't leave
 // this pointing at a file that has moved.
-const PAGE_LOCATIONS = ['public/desk/index.html', 'functions-assets/desk.html'];
+const PAGE_LOCATIONS = ['functions-assets/desk.html', 'public/desk/index.html'];
 
 async function loadPage() {
   if (cachedPage) return cachedPage;
@@ -93,34 +93,24 @@ export default async (request) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// THE GATE IS CURRENTLY OFF. This function does not claim /desk/, so the
-// page is served straight from public/ like any other file, and anyone with
-// the link can open the editor.
+// THE GATE IS ON. This function claims /desk/, the page lives in
+// functions-assets/ where the CDN can't reach it, and DESK_SESSION_SECRET
+// is set in Netlify. All three are load-bearing: drop any one and the lock
+// stops locking, in two cases silently.
 //
-// That was a deliberate choice, not an accident: the gate needs a signing
-// key set in Netlify, and Vivaan didn't want to deal with sign-in yet. The
-// code is kept rather than deleted so turning it on is three small edits
-// instead of a rebuild.
+// The one to guard hardest is the page's location. If it ever moves back
+// into public/, the CDN serves it around this check and the site keeps
+// looking exactly as correct as it does now — a lock on a door with no
+// wall. netlify.toml's `included_files` is what carries the file into the
+// bundle from outside public/; without it this function 500s, which at
+// least fails loudly.
 //
-// TO SWITCH IT BACK ON:
+// TO SWITCH IT OFF: move functions-assets/desk.html back to
+// public/desk/index.html, comment the export below out again, and drop the
+// included_files block. Deleting DESK_SESSION_SECRET is NOT how you turn it
+// off — with the export live, a missing secret is a 500, on purpose.
 //
-//   1. Set DESK_SESSION_SECRET in Netlify → Site configuration →
-//      Environment variables (`openssl rand -base64 32` makes one).
-//   2. Uncomment the export below, so this function answers /desk/.
-//   3. Move public/desk/index.html to functions-assets/desk.html and add
-//      this to netlify.toml, so the CDN can't serve the page around the
-//      check and the function still has it:
-//
-//          [functions."desk"]
-//            included_files = ["functions-assets/desk.html"]
-//
-//      Step 3 is the one that actually matters. Without it the file stays
-//      in public/ and the CDN keeps handing it out, gate or no gate — a
-//      lock on a door that still has its wall missing.
-//
-// Nothing else needs changing: /api/desk-auth and the desk branch in
-// callback.mjs stay wired up, and test/session.test.mjs still covers the
-// cookie signing.
-//
-// export const config = { path: ['/desk', '/desk/'] };
+// /api/desk-auth and the desk branch in callback.mjs do the sign-in;
+// test/session.test.mjs covers the cookie signing.
+export const config = { path: ['/desk', '/desk/'] };
 // ─────────────────────────────────────────────────────────────────────────

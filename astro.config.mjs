@@ -48,21 +48,33 @@ const devDesignEditor = {
   },
 };
 
-// The Sunday Table editor ships as public/desk/index.html and any static
-// host resolves /desk/ to it — but Vite's dev server doesn't do directory
-// indexes for public/ files, so in dev the bare URL 404s and the page
-// "looks broken" (the same trailing-slash trap /dev/editor hit). Redirect
-// only that exact URL; everything else is untouched.
-const devDeskIndex = {
-  name: 'dev-desk-index',
+// Serves the Sunday Table editor at /desk/ during `npm run dev`.
+//
+// On the live site that URL belongs to netlify/functions/desk.mjs, which
+// checks a signed session before sending a byte — and Astro's dev server
+// doesn't run Netlify Functions, so without this the page simply doesn't
+// exist locally and /admin/'s hand-over dead-ends. This is a dev-server
+// hook: 'astro:server:setup' never runs during `astro build`, so nothing
+// here can put the page on the live site or weaken the gate in front of it.
+//
+// It is deliberately unauthenticated, because there is nothing to
+// authenticate against locally — the secret and the OAuth app live in
+// Netlify. What it serves is your own file, off your own laptop, to you.
+const devDesk = {
+  name: 'dev-desk',
   hooks: {
     'astro:server:setup': ({ server }) => {
-      server.middlewares.use((req, res, next) => {
+      const page = new URL('./functions-assets/desk.html', import.meta.url).pathname;
+      server.middlewares.use(async (req, res, next) => {
         const path = (req.url || '').split('?')[0];
         if (path !== '/desk/' && path !== '/desk') return next();
-        res.statusCode = 302;
-        res.setHeader('Location', '/desk/index.html');
-        res.end();
+        try {
+          const body = await readFile(page);
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(body);
+        } catch {
+          next();
+        }
       });
     },
   },
@@ -80,7 +92,7 @@ export default defineConfig({
   // places the domain is written down.
   site: 'https://collietiel-adventures.netlify.app',
   output: 'static',
-  integrations: [devDesignEditor, devDeskIndex],
+  integrations: [devDesignEditor, devDesk],
   markdown: {
     // Lets reviews write `:collie-smiling:` inline. See the plugin file.
     remarkPlugins: [remarkEmotionIcons],

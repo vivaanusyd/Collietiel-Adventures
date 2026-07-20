@@ -26,20 +26,26 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# The sign-in gate in front of the editor is currently OFF, so the page is an
-# ordinary static file in public/ and needs nothing here. When it goes back
-# on, the page moves out of public/ (or the CDN would serve it around the
-# check) and has to be carried inside the function instead:
-#
-#   [functions."desk"]
-#     included_files = ["functions-assets/desk.html"]
-#
-# netlify/functions/desk.mjs has the full switch-on steps at the bottom.
+# The sign-in gate in front of the Sunday Table editor is ON, which is why
+# its page is not in public/ — everything there is handed to whoever asks by
+# the CDN, before any function runs, so a gated page cannot live in it. This
+# block is what carries the file into the function's bundle from outside
+# public/. Remove it and /desk/ starts 500ing: the check still happens, but
+# the function has no page left to serve.
+[functions."desk"]
+  included_files = ["functions-assets/desk.html"]
 
-# TWO ENVIRONMENT VARIABLES MUST BE SET IN THE NETLIFY DASHBOARD, not here:
+# DESK_SESSION_SECRET must also be set in the Netlify dashboard — see below.
+
+# THREE ENVIRONMENT VARIABLES MUST BE SET IN THE NETLIFY DASHBOARD, not here:
 #
 #   GITHUB_OAUTH_ID       the OAuth app's client ID
 #   GITHUB_OAUTH_SECRET   the OAuth app's client secret
+#   DESK_SESSION_SECRET   signs the /desk/ session cookie (any long random
+#                         value; `openssl rand -base64 32`). Not a password
+#                         anyone types — writers sign in with their own
+#                         GitHub account, and this is what makes their
+#                         session cookie unforgeable.
 #
 # They are deliberately absent from this file and from the repository. A
 # client secret in Git is a client secret published — the repo is readable,

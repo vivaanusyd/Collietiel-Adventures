@@ -377,7 +377,45 @@ Design source too — otherwise you'll rediscover this in three months and
 have no idea why. Everything else about that file is untouched, which is
 what keeps it looking exactly like your design.
 
-### The gate is built, and switched off — on purpose
+### Fourth session — the gate is ON, and /admin/ opens the desk
+
+Two changes, and the second is the one that matters.
+
+**Signing in at `/admin/` now lands you in the Sunday Table.** The CMS still
+loads underneath, because its GitHub sign-in is the only sign-in this site
+has — but you never see it. `/admin/?cms=1` still opens it. I kept that on
+purpose and it isn't a link: the desk's Publish still writes only to your
+own browser's storage, so Sveltia remains the only thing here that can put a
+review on the site, and sending every `/admin/` visit to the desk would
+otherwise leave no URL at all that reaches it.
+
+**The `/desk/` sign-in gate is on.** You set `DESK_SESSION_SECRET`, so the
+three things it needs are now all true: the secret exists, the function
+claims the URL, and — the part that does the actual work — the page moved
+out of `public/` to `functions-assets/desk.html`. Anything in `public/` is
+handed out by the CDN before any code runs, so leaving it there would have
+been a lock on a door with no wall.
+
+Two consequences worth knowing:
+
+- **`npm run dev` serves `/desk/` with no sign-in at all.** Astro's dev
+  server doesn't run Netlify Functions, so the gate isn't there locally.
+  That's your own file, off your own laptop, to you — but don't read "it
+  opened for me" locally as evidence about the live site. Test the lock in a
+  private window on the deployed site.
+- **You may sign in twice the first time** — once for the CMS at `/admin/`,
+  once when the desk's own gate checks you. Same GitHub account, and GitHub
+  usually waves the second one through, but that's a seam I'd want to close
+  if it annoys you.
+
+One thing I could not test: the real sign-in, which needs the secrets that
+only exist in Netlify. The hand-over detects your session by looking for a
+stored user record with a token rather than a fixed key name, because
+Sveltia and its Decap ancestor use different ones and guessing wrong would
+fail silently — you'd sit on the CMS with nothing explaining why. If the
+hand-over doesn't fire, that's the first thing to look at.
+
+### The gate was built, and switched off — since switched on
 
 You saw `/desk/` return "DESK_SESSION_SECRET is not set on this site" and
 decided you didn't want to deal with sign-in yet. Fair. That message was the

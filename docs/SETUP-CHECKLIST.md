@@ -68,33 +68,32 @@ Netlify in the next step and nowhere else.
 
 1. Go to <https://collietiel-adventures.netlify.app/admin/>.
 2. Click **Sign in with GitHub**. A popup asks you to authorise the app.
-3. You should land in the editor with a **Reviews** collection.
-4. Click **☀ The Sunday Table** in the bottom-right corner. The Writer's
-   desk opens — no second sign-in, because that editor currently has no lock
-   on it (see below).
+3. You should land in **The Sunday Table**, not the CMS — signing in at
+   `/admin/` hands over to the editor at `/desk/`.
+4. To reach the CMS itself (still the only thing that publishes for real),
+   go to `/admin/?cms=1`. It's deliberately not linked.
 
 If sign-in fails, see [Troubleshooting](#troubleshooting) at the bottom.
 
-### 1.5 Optional — lock the Sunday Table editor
+### 1.5 The third environment variable
 
-`/desk/` opens for anyone who has the link. There is a finished sign-in gate
-for it sitting switched off in the repo, because a prototype that saves only
-to your own browser has nothing to protect yet. Turn it on before Publish
-can write to the site for real.
+The Sunday Table at `/desk/` is behind its own sign-in, so it needs one more
+value alongside the two above:
 
-1. Make a long random value. In Terminal: `openssl rand -base64 32`
-2. **Site configuration → Environment variables → Add a variable**:
+| Key | Value |
+|---|---|
+| `DESK_SESSION_SECRET` | a long random value — `openssl rand -base64 32` |
 
-   | Key | Value |
-   |---|---|
-   | `DESK_SESSION_SECRET` | the random value from step 1 |
+It is **not a password anyone types.** Writers sign in with their own GitHub
+accounts; this is the key the server signs their session cookie with, so a
+forged cookie can't be made. One value for the whole site, no matter how
+many writers — you never need anything from them. Never commit it, and
+changing it later is harmless: it just signs everyone out.
 
-   Never commit it. Changing it later is harmless — it just signs everyone
-   out.
-3. Follow the steps at the bottom of `netlify/functions/desk.mjs`; there are
-   two small code edits, and one of them (moving the page out of `public/`)
-   is the one that actually does the work.
-4. **Deploys → Trigger deploy → Deploy site.**
+**To check the lock actually works:** open `/desk/` in a private window. You
+should be bounced to GitHub sign-in and see no editor. If you see the page,
+stop — that means the file is being served by the CDN around the check, and
+[DEVELOPING.md](DEVELOPING.md#the-sunday-table-editor-desk) explains why.
 
 ---
 

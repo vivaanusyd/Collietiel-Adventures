@@ -277,8 +277,8 @@ site's — treat it as a design reference, not a spec.
 
 ## The Sunday Table editor (`/desk/`)
 
-`public/desk/index.html` is the newer Claude Design prototype ("The Sunday
-Table — Review Editor") shipped **verbatim** on the live site at `/desk/`.
+`functions-assets/desk.html` is the newer Claude Design prototype ("The
+Sunday Table — Review Editor") served **verbatim** at `/desk/`.
 It's a single self-contained bundle — React, the dc-runtime, the app and
 all fonts inlined — served byte-for-byte precisely so it renders exactly
 like the exported file; any processing (Prettier, template extraction,
@@ -295,37 +295,43 @@ Git-backed content is future work (the path is written down in
 `/admin/arrange` is unaffected and remains the editor that writes real
 blocks.
 
-Writers reach it from the corner launcher in the signed-in CMS at
-`/admin/` (next to "Arrange on canvas").
+**Signing in at `/admin/` lands you here.** The CMS still loads — its
+GitHub OAuth is the only sign-in this site has — but it is no longer the
+destination: `public/admin/index.html` watches for an authenticated session
+and hands the page over to `/desk/`. `/admin/?cms=1` still opens the CMS,
+deliberately unlinked, because Sveltia remains the only machinery here that
+can actually publish a review and sending every visit to the desk would
+otherwise leave no URL that reaches it.
 
-**There is a sign-in gate for it, and it is currently switched off.** The
-page is a plain static file, so anyone with the link can open it; `noindex`
-and the `robots.txt` rule keep it out of search results, and that is all
-that stands in front of it today. That's a deliberate choice for a
-prototype whose Publish writes nowhere but the reader's own browser — not
-an oversight — but it stops being acceptable the moment Publish can commit.
-
-The gate is built and parked rather than deleted:
+**The sign-in gate in front of `/desk/` is ON.** Three things make it work,
+and all three are load-bearing:
 
 - `netlify/functions/desk.mjs` — serves the page only to a valid session.
-  Its `config.path` is commented out, which is what makes it dormant, and
-  the switch-on steps are written at the bottom of that file.
+  Its `config.path` claims `/desk/`, which is what makes it live.
 - `netlify/functions/desk-auth.mjs` + the desk branch in `callback.mjs` —
   the sign-in itself, reusing the CMS's OAuth app. `/api/desk-auth` sets an
   `oauth_flow=desk` cookie, and `callback.mjs` branches on it and asks
   GitHub whether the account has push access (`permissions.push`) before
   issuing a signed session. Both flows share `/api/callback` because a
   GitHub OAuth app permits only one registered callback URL — that is the
-  whole reason for the cookie branch instead of a second endpoint. Inert
-  while nothing sets that cookie.
-- `netlify/lib/session.mjs` + `test/session.test.mjs` — the cookie signing
-  and its tests. A forged cookie that verifies is a silent, total failure,
-  so it is tested rather than trusted, and the tests still run so the parked
-  code doesn't quietly rot.
+  whole reason for the cookie branch instead of a second endpoint.
+- `netlify/lib/session.mjs` + `test/session.test.mjs` — the cookie signing,
+  keyed by `DESK_SESSION_SECRET` (set in Netlify, never in the repo). A
+  forged cookie that verifies is a silent, total failure, so it is tested
+  rather than trusted.
 
-The one thing to understand before switching it on: **moving the page out
-of `public/` is the part that matters.** A static file is handed out by the
-CDN before any of the page's own JavaScript exists, so a login screen
-written inside it is a picture of a lock and `curl` walks straight past.
-Leave the file in `public/` with the function enabled and you get a lock on
-a door with no wall.
+**The part that actually does the work is the page's location.** It is in
+`functions-assets/`, not `public/`, and `netlify.toml`'s `included_files`
+is what carries it into the function's bundle from there. Everything in
+`public/` is handed out by the CDN before any function runs, so a gated
+page cannot live in it — move this file back and you get a lock on a door
+with no wall, with nothing about the site looking any different.
+
+Access is the repo's collaborator list and nothing else: no per-writer
+secret, no accounts to create. `DESK_SESSION_SECRET` is one site-wide
+signing key, not anybody's password; rotating it just signs everyone out.
+
+`npm run dev` serves the page unauthenticated via the `devDesk` hook in
+`astro.config.mjs` — Astro's dev server doesn't run Netlify Functions, so
+the gate simply isn't there locally. That hook is `astro:server:setup`
+only, so it cannot run during a build.
