@@ -377,20 +377,40 @@ Design source too — otherwise you'll rediscover this in three months and
 have no idea why. Everything else about that file is untouched, which is
 what keeps it looking exactly like your design.
 
-### The gate, and the thing it doesn't do
+### The gate is built, and switched off — on purpose
 
-`/desk/` now checks a signed session cookie before sending a single byte,
-and issues one only to GitHub accounts with push access to this repo. I
-tested it locally with `netlify dev`: no cookie and a forged cookie both get
-a redirect and no page; a valid cookie gets the editor, byte-identical to
-the source file.
+You saw `/desk/` return "DESK_SESSION_SECRET is not set on this site" and
+decided you didn't want to deal with sign-in yet. Fair. That message was the
+lock refusing to open without its key: the key is a secret, so it can only
+be set in Netlify, and the code refuses to serve the page rather than serve
+it unguarded.
 
-Be clear-eyed about the boundary: this protects the *running editor on the
-site*. It does not hide the editor's code, which sits in a public
-repository, and it isn't protecting anything valuable yet, because Publish
-still only writes to your own browser's storage. It becomes load-bearing the
-moment Publish can commit to the repo — which is exactly why it's worth
-having in place first rather than after.
+So the gate is now **off but kept**. `/desk/` is an ordinary page again and
+opens instantly for anyone with the link. Switching it on later is a couple
+of small edits, written out at the bottom of `netlify/functions/desk.mjs`,
+rather than rebuilding it.
+
+One thing to hold onto when that day comes: the edit that actually matters
+is moving the page out of `public/`. Everything in `public/` is handed
+straight to whoever asks by the CDN, before any code runs — so a login
+screen inside the page is scenery. If you ever "turn the gate on" and leave
+the file in `public/`, you'll have a lock on a door with no wall, and it
+will look like it's working.
+
+### What the gate does and doesn't buy you
+
+When it's on, `/desk/` checks a signed session cookie before sending a
+single byte, and only GitHub accounts with push access to this repo get one.
+I tested that locally with `netlify dev` before switching it off: no cookie
+and a forged cookie both get a redirect and no page; a valid cookie gets the
+editor, byte-identical to the source file.
+
+Be clear-eyed about the boundary even then. It protects the *running editor
+on the site*. It does not hide the editor's code, which sits in a public
+repository, and right now there is nothing behind it worth taking, because
+Publish only writes to your own browser's storage. It becomes load-bearing
+the moment Publish can commit to the repo — which is the moment to turn it
+on, and the reason it was worth finishing rather than leaving as an idea.
 
 ### Google sign-in — the answer to what you asked
 

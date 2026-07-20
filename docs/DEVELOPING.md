@@ -277,9 +277,8 @@ site's — treat it as a design reference, not a spec.
 
 ## The Sunday Table editor (`/desk/`)
 
-`functions-assets/desk.html` is the newer Claude Design prototype ("The
-Sunday Table — Review Editor") shipped **verbatim** on the live site at
-`/desk/`.
+`public/desk/index.html` is the newer Claude Design prototype ("The Sunday
+Table — Review Editor") shipped **verbatim** on the live site at `/desk/`.
 It's a single self-contained bundle — React, the dc-runtime, the app and
 all fonts inlined — served byte-for-byte precisely so it renders exactly
 like the exported file; any processing (Prettier, template extraction,
@@ -299,28 +298,34 @@ blocks.
 Writers reach it from the corner launcher in the signed-in CMS at
 `/admin/` (next to "Arrange on canvas").
 
-**It is behind a real gate**, and that is why the file isn't in `public/`.
-A static file is handed out by the CDN before any of the page's own
-JavaScript exists, so a login screen written inside it is a picture of a
-lock — `curl` walks straight past. Instead `netlify/functions/desk.mjs`
-answers `/desk/`: no valid session, no bytes, just a redirect to sign in.
+**There is a sign-in gate for it, and it is currently switched off.** The
+page is a plain static file, so anyone with the link can open it; `noindex`
+and the `robots.txt` rule keep it out of search results, and that is all
+that stands in front of it today. That's a deliberate choice for a
+prototype whose Publish writes nowhere but the reader's own browser — not
+an oversight — but it stops being acceptable the moment Publish can commit.
 
-The flow reuses the OAuth app the CMS already uses. `/api/desk-auth`
-starts it and sets an `oauth_flow=desk` cookie; `callback.mjs` sees that
-cookie and takes its second branch, asking GitHub whether the account has
-push access to the repo (`permissions.push`) before issuing a signed,
-httpOnly session cookie good for 12 hours. Both flows share `/api/callback`
-because a GitHub OAuth app permits only one registered callback URL — that
-is the whole reason for the cookie-based branch rather than a second
-endpoint. The GitHub token is used for those two questions and then
-discarded; only our own signed session is kept. `netlify/lib/session.mjs`
-does the signing, and `test/session.test.mjs` is the regression net for it
-— a forged cookie that verifies is a silent, total failure, so it is tested
-rather than trusted.
+The gate is built and parked rather than deleted:
 
-Two consequences worth knowing. `DESK_SESSION_SECRET` must be set in
-Netlify or `/desk/` refuses to open (it fails closed on purpose). And under
-`npm run dev` there are no functions and no sign-in, so a dev-only hook in
-`astro.config.mjs` serves the page straight from `functions-assets/` —
-`astro:server:setup` never runs during a build, so that shortcut cannot
-reach the live site.
+- `netlify/functions/desk.mjs` — serves the page only to a valid session.
+  Its `config.path` is commented out, which is what makes it dormant, and
+  the switch-on steps are written at the bottom of that file.
+- `netlify/functions/desk-auth.mjs` + the desk branch in `callback.mjs` —
+  the sign-in itself, reusing the CMS's OAuth app. `/api/desk-auth` sets an
+  `oauth_flow=desk` cookie, and `callback.mjs` branches on it and asks
+  GitHub whether the account has push access (`permissions.push`) before
+  issuing a signed session. Both flows share `/api/callback` because a
+  GitHub OAuth app permits only one registered callback URL — that is the
+  whole reason for the cookie branch instead of a second endpoint. Inert
+  while nothing sets that cookie.
+- `netlify/lib/session.mjs` + `test/session.test.mjs` — the cookie signing
+  and its tests. A forged cookie that verifies is a silent, total failure,
+  so it is tested rather than trusted, and the tests still run so the parked
+  code doesn't quietly rot.
+
+The one thing to understand before switching it on: **moving the page out
+of `public/` is the part that matters.** A static file is handed out by the
+CDN before any of the page's own JavaScript exists, so a login screen
+written inside it is a picture of a lock and `curl` walks straight past.
+Leave the file in `public/` with the function enabled and you get a lock on
+a door with no wall.
