@@ -33,6 +33,87 @@
     <script src="https://unpkg.com/@sveltia/cms@0/dist/sveltia-cms.js"></script>
 
     <script>
+      // --- /admin/ signs you in, then hands over to the Sunday Table ------
+      //
+      // Vivaan wants the Sunday Table to be what a writer lands on, not the
+      // CMS. But the sign-in has to stay Sveltia's: the GitHub OAuth
+      // handshake in netlify/functions/{auth,callback}.mjs is the only
+      // sign-in this site has, and the desk has none of its own. So the CMS
+      // still loads — it just isn't the destination any more. It shows the
+      // GitHub button, and the moment you're actually signed in this
+      // replaces the page with /desk/.
+      //
+      // Worth being straight about what this does NOT do: it is not a lock
+      // on the desk. /desk/ is a static file in public/, so anyone with the
+      // link opens it without signing in at all — see the gate written and
+      // deliberately switched off in netlify/functions/desk.mjs. This only
+      // changes where signing in at /admin/ takes you.
+
+      // The escape hatch, deliberately kept and deliberately not a link.
+      // The desk's Publish writes to this browser's localStorage and
+      // nothing else, so Sveltia is still the only machinery on this site
+      // that can put a review on the site. Sending every /admin/ visit to
+      // the desk without this would leave no URL at all that reaches it.
+      const WANTS_CMS = new URLSearchParams(location.search).has('cms');
+
+      function handOverToDesk() {
+        if (WANTS_CMS) return;
+        // replace(), not assign(): otherwise Back from the desk lands on
+        // /admin/, which immediately forwards here again — a trap the
+        // writer can only escape by closing the tab.
+        location.replace('/desk/');
+      }
+
+      /**
+       * Is someone signed in?
+       *
+       * Two ways in, because they catch different moments. The `login`
+       * event fires when you click through GitHub — but not on the far more
+       * common visit where the session is already in storage and Sveltia
+       * restores it silently, with no event at all. So the poll is the one
+       * that does the real work and the event is what makes the first
+       * sign-in feel instant.
+       *
+       * The storage key is matched by shape rather than by name on purpose:
+       * Sveltia writes `sveltia-cms.user`, its Decap ancestor wrote
+       * `netlify-cms-user`, and hard-coding either would fail silently —
+       * the page would just sit on the CMS forever with nothing to explain
+       * why.
+       */
+      function isSignedIn() {
+        try {
+          for (const key of Object.keys(localStorage)) {
+            if (!/user/i.test(key)) continue;
+            const value = JSON.parse(localStorage.getItem(key) || 'null');
+            if (value && typeof value === 'object' && (value.token || value.backendName)) {
+              return true;
+            }
+          }
+        } catch {
+          // Private-browsing modes throw on localStorage, and a half-written
+          // value throws on parse. Neither is a reason to break the editor:
+          // fall through and let the writer use the CMS.
+        }
+        return false;
+      }
+
+      if (!WANTS_CMS) {
+        window.addEventListener('load', () => {
+          try {
+            CMS?.registerEventListener?.({ name: 'login', handler: handOverToDesk });
+          } catch {
+            // Older or newer CMS builds may not expose this. The poll below
+            // covers the same case a beat later.
+          }
+        });
+
+        setInterval(() => {
+          if (isSignedIn()) handOverToDesk();
+        }, 400);
+      }
+    </script>
+
+    <script>
       // Everything below is progressive enhancement layered on top of the
       // CMS: if any of it throws, the editor still works, it just loses the
       // emotion palette or the preview styling.
