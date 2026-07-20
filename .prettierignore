@@ -3,6 +3,17 @@ dist/
 node_modules/
 package-lock.json
 
+# The Sunday Table editor is a generated, self-contained bundle (inline
+# scripts + base64 assets) served byte-for-byte at /desk/. Reflowing it
+# would corrupt it; it is never hand-edited, so there's nothing to format.
+public/desk/
+
+# Same story for the Claude Design prototypes and their generated runtime
+# ("GENERATED ... do not edit" per support.js's own header): these are
+# design exports, not hand-written code, and Prettier reflowing them is a
+# 3,000-line diff of someone else's generator output.
+layout-editor/
+
 # The CMS config is hand-formatted YAML with alignment and comments that
 # carry meaning for whoever edits it next. Prettier's YAML output reflows
 # those into something harder to read, so it's left alone deliberately.

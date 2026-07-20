@@ -1,7 +1,10 @@
-# Allow everything. This is a public blog — there's nothing here to hide
-# from a crawler, and drafts never reach the build in the first place
-# (see src/lib/reviews.ts), so there's no draft URL to disallow.
+# Allow everything except /desk/. This is a public blog — there's nothing
+# here to hide from a crawler, and drafts never reach the build in the first
+# place (see src/lib/reviews.ts), so there's no draft URL to disallow.
+# /desk/ is the Sunday Table editor, an application rather than content
+# (it also carries a noindex meta) — same reasoning as the CMS at /admin/.
 User-agent: *
+Disallow: /desk/
 Allow: /
 
 # Absolute URL is required here — the sitemap directive is the one place

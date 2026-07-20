@@ -48,6 +48,27 @@ const devDesignEditor = {
   },
 };
 
+// The Sunday Table editor ships as public/desk/index.html and any static
+// host resolves /desk/ to it — but Vite's dev server doesn't do directory
+// indexes for public/ files, so in dev the bare URL 404s and the page
+// "looks broken" (the same trailing-slash trap /dev/editor hit). Redirect
+// only that exact URL; everything else is untouched.
+const devDeskIndex = {
+  name: 'dev-desk-index',
+  hooks: {
+    'astro:server:setup': ({ server }) => {
+      server.middlewares.use((req, res, next) => {
+        if ((req.url || '').split('?')[0] === '/desk/') {
+          res.statusCode = 302;
+          res.setHeader('Location', '/desk/index.html');
+          return res.end();
+        }
+        next();
+      });
+    },
+  },
+};
+
 // Static output — no server needed. Both Netlify and Vercel detect Astro
 // automatically and build this with their zero-config static presets
 // (Netlify: `astro build` -> publish `dist/`; Vercel: Astro preset).
@@ -60,7 +81,7 @@ export default defineConfig({
   // places the domain is written down.
   site: 'https://collietiel-adventures.netlify.app',
   output: 'static',
-  integrations: [devDesignEditor],
+  integrations: [devDesignEditor, devDeskIndex],
   markdown: {
     // Lets reviews write `:collie-smiling:` inline. See the plugin file.
     remarkPlugins: [remarkEmotionIcons],
