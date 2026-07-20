@@ -140,9 +140,10 @@ that fades on its own:
 - Failure: red, **"blog publish failed"**, plus the error code and a short
   plain reason.
 
-**Open question left unanswered:** "all reviews" is ambiguous in the desk —
-the **dashboard** (drafts + published) or the **reader list** (its internal
-site preview). Recommendation was the dashboard. **Ask before building.**
+**Settled:** it returns to the **dashboard** — the desk's own list of drafts
+and published reviews — and the message appears there, not on the reader list
+and not on the live site. (This was the one open question; Vivaan confirmed
+the dashboard.)
 
 ### Decision 7 — Phone layouts are Stage C, deferred indefinitely
 
@@ -321,7 +322,4 @@ canvas/blocks decision. Stage C phone layouts.
    application). Have the client ID and secret ready — **and do not paste them
    into the repo or into chat.**
 5. **Decide the two allowlisted Gmail addresses.**
-6. **Answer the open question** from Decision 6: after Publish, back to the
-   desk **dashboard** or the **reader list**?
-
 Nothing above needs a developer. Everything after it does.
