@@ -349,7 +349,57 @@ up", that's Git LFS or an image CDN much later, not a server now.
 npm test
 ```
 
-Build + `sitetest.py` + 54 unit tests. Currently: 0 failures, 0 errors, and
+Build + `sitetest.py` + unit tests. Currently: 0 failures, 0 errors, and
 one pre-existing warning that the homepage has a single heading — which is
 correct, because there are no reviews to list yet. It resolves itself the
 moment you publish one.
+
+## Third session — the Sunday Table
+
+### The Publish button was broken in the prototype itself
+
+You said Publish did nothing, and you were right. It isn't the transfer —
+it's a bug in the exported prototype. The template wires `{{ publish }}` to
+two buttons: the one in the preview top bar and the one in the editor
+toolbar. But the app script only ever assigns `out.publish` inside the
+`if(readingBar){…}` block, which runs in preview and reader mode. In the
+editor, `out.publish` is undefined, so the toolbar's Publish button has no
+handler attached and clicking it genuinely does nothing. (Publish from
+**Preview** always worked — that was the workaround.)
+
+I patched it in `functions-assets/desk.html` by adding
+`out.publish=()=>this.publish();` next to `out.enterPreview=…`.
+
+**This patch is the one thing that does not survive a re-export.** That file
+is generated output; if you export the prototype from Claude Design again,
+it overwrites the fix and Publish goes dead a second time. So fix it in the
+Design source too — otherwise you'll rediscover this in three months and
+have no idea why. Everything else about that file is untouched, which is
+what keeps it looking exactly like your design.
+
+### The gate, and the thing it doesn't do
+
+`/desk/` now checks a signed session cookie before sending a single byte,
+and issues one only to GitHub accounts with push access to this repo. I
+tested it locally with `netlify dev`: no cookie and a forged cookie both get
+a redirect and no page; a valid cookie gets the editor, byte-identical to
+the source file.
+
+Be clear-eyed about the boundary: this protects the *running editor on the
+site*. It does not hide the editor's code, which sits in a public
+repository, and it isn't protecting anything valuable yet, because Publish
+still only writes to your own browser's storage. It becomes load-bearing the
+moment Publish can commit to the repo — which is exactly why it's worth
+having in place first rather than after.
+
+### Google sign-in — the answer to what you asked
+
+You asked whether you could use Google instead. For *writers*, no, and the
+reason is in `docs/ROADMAP.md` §1: publishing means committing as that
+person, so the identity has to be their GitHub account or you lose per-writer
+history and become the access-control authority yourself. The Google-shaped
+answer you actually want is **Cloudflare Access** — a door in front of the
+whole site section, Google sign-in, free under 50 users. It needs a custom
+domain on Cloudflare DNS (~$12/yr), which `collietiel-adventures.netlify.app`
+can't do. When you buy a domain, that's the upgrade, and it stacks on top of
+what's here rather than replacing it.

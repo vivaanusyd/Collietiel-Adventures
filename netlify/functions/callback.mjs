@@ -4,7 +4,95 @@
 // This is the half that holds the CLIENT SECRET, which is why it runs on a
 // server. See auth.mjs for the full reasoning.
 
+import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSession } from '../lib/session.mjs';
+
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
+
+// Which repository's collaborator list decides who may edit. Public
+// information — it's the repo this file is in — so it isn't a secret, but it
+// lives in one named constant rather than being spelled out twice below.
+const EDITOR_REPO = process.env.DESK_REPO || 'vivaanusyd/Collietiel-Adventures';
+
+/**
+ * Finish the /desk/ sign-in: decide whether this GitHub account may edit,
+ * and if so issue our own session cookie.
+ *
+ * The authorisation question is answered HERE, on the server, by asking
+ * GitHub — not in the browser. `permissions.push` is GitHub's own answer to
+ * "can this account write to this repository", which is the same list that
+ * decides who can merge a review. Add or remove someone in the repo's
+ * Settings → Collaborators and this follows immediately, with no second list
+ * to maintain and no way to talk the browser out of the answer.
+ *
+ * The GitHub token is used only for these two calls and never stored.
+ */
+async function finishDeskSignIn(token, url) {
+  const secret = process.env.DESK_SESSION_SECRET;
+  if (!secret) {
+    return errorPage(
+      'DESK_SESSION_SECRET is not set on this site, so a sign-in cannot be ' +
+        'issued. See docs/SETUP-CHECKLIST.md.'
+    );
+  }
+
+  const gh = (path) =>
+    fetch(`https://api.github.com${path}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'collietiel-adventures-desk',
+      },
+    });
+
+  const [userResponse, repoResponse] = await Promise.all([
+    gh('/user'),
+    gh(`/repos/${EDITOR_REPO}`),
+  ]);
+
+  const user = await userResponse.json().catch(() => ({}));
+  const repo = await repoResponse.json().catch(() => ({}));
+
+  if (!userResponse.ok || !user.login) {
+    return errorPage('GitHub would not say who you are, so sign-in stopped here.');
+  }
+
+  // No permissions block means the question was never actually answered —
+  // treat that as "no". A gate that opens when it cannot tell is not a gate.
+  if (!repo || typeof repo.permissions !== 'object' || repo.permissions === null) {
+    return errorPage(
+      `GitHub did not report your access level for ${EDITOR_REPO}, so you were not let in. ` +
+        'If this happens to an account that IS a collaborator, the sign-in scope in ' +
+        'desk-auth.mjs needs widening from read:user to public_repo.'
+    );
+  }
+
+  if (repo.permissions.push !== true) {
+    return errorPage(
+      `The account <strong>${user.login}</strong> does not have write access to ` +
+        `${EDITOR_REPO}, so it cannot open the editor. Ask the site owner to add you under ` +
+        'Settings → Collaborators.',
+      403
+    );
+  }
+
+  const session = await signSession(user.login, secret, SESSION_TTL_SECONDS);
+  const clear = (name) => `${name}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
+
+  return new Response(null, {
+    status: 302,
+    headers: [
+      ['Location', new URL('/desk/', url.origin).href],
+      [
+        'Set-Cookie',
+        `${SESSION_COOKIE}=${session}; HttpOnly; Secure; SameSite=Lax; Path=/; ` +
+          `Max-Age=${SESSION_TTL_SECONDS}`,
+      ],
+      ['Set-Cookie', clear('oauth_state')],
+      ['Set-Cookie', clear('oauth_flow')],
+      ['Cache-Control', 'no-store, private'],
+    ],
+  });
+}
 
 /**
  * The page that closes the loop.
@@ -48,12 +136,15 @@ function respondToOpener(payload) {
 </html>`;
 }
 
-function errorPage(message) {
+function errorPage(message, status = 400) {
   return new Response(
     `<!doctype html><html lang="en"><head><meta charset="utf-8" /><title>Sign-in failed</title></head>` +
       `<body><h1>Sign-in failed</h1><p>${message}</p>` +
       `<p><a href="/admin/">Back to the editor</a></p></body></html>`,
-    { status: 400, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    {
+      status,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, private' },
+    }
   );
 }
 
@@ -110,6 +201,13 @@ export default async (request) => {
     return errorPage(
       `GitHub refused the sign-in: ${data.error_description || data.error || response.status}`
     );
+  }
+
+  // Two flows come through here. The desk sets a cookie in desk-auth.mjs to
+  // say so; anything without it is the CMS popup, which is the original
+  // behaviour and stays exactly as it was.
+  if (cookies.oauth_flow === 'desk') {
+    return finishDeskSignIn(data.access_token, url);
   }
 
   return new Response(respondToOpener({ token: data.access_token, provider: 'github' }), {

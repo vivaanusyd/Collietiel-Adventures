@@ -6,7 +6,7 @@ package-lock.json
 # The Sunday Table editor is a generated, self-contained bundle (inline
 # scripts + base64 assets) served byte-for-byte at /desk/. Reflowing it
 # would corrupt it; it is never hand-edited, so there's nothing to format.
-public/desk/
+functions-assets/
 
 # Same story for the Claude Design prototypes and their generated runtime
 # ("GENERATED ... do not edit" per support.js's own header): these are

@@ -23,3 +23,8 @@ node_modules/
 # Design prototypes arrive as Claude Design zip exports; the extracted
 # folder is tracked, the zip itself is not.
 *.zip
+
+# Written by netlify-cli when you run `netlify dev` or `netlify build`
+# locally to test the functions. Both are build output, not source.
+.netlify
+deno.lock

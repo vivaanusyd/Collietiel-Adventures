@@ -26,6 +26,13 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# The editor page ships INSIDE the desk function rather than as a static file
+# in public/, because a static file is served to whoever asks — the check has
+# to happen before the bytes go out. functions-assets/ is deliberately not a
+# published directory; nothing under it reaches dist/.
+[functions."desk"]
+  included_files = ["functions-assets/desk.html"]
+
 # TWO ENVIRONMENT VARIABLES MUST BE SET IN THE NETLIFY DASHBOARD, not here:
 #
 #   GITHUB_OAUTH_ID       the OAuth app's client ID

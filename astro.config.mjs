@@ -48,22 +48,32 @@ const devDesignEditor = {
   },
 };
 
-// The Sunday Table editor ships as public/desk/index.html and any static
-// host resolves /desk/ to it — but Vite's dev server doesn't do directory
-// indexes for public/ files, so in dev the bare URL 404s and the page
-// "looks broken" (the same trailing-slash trap /dev/editor hit). Redirect
-// only that exact URL; everything else is untouched.
-const devDeskIndex = {
-  name: 'dev-desk-index',
+// Serves the Sunday Table editor at /desk/ during `npm run dev`.
+//
+// In production that URL is a Netlify Function (netlify/functions/desk.mjs)
+// which checks a signed session cookie before sending the page, and the file
+// itself lives in functions-assets/ rather than public/ precisely so the CDN
+// can't hand it out unchecked. Neither of those exists under `astro dev`:
+// there are no functions and no sign-in, so without this the page a writer
+// is trying to work on simply isn't there.
+//
+// This is dev-only in the strict sense — 'astro:server:setup' never runs
+// during `astro build`, the same guarantee the /dev/editor hook relies on —
+// so it cannot become a way around the gate on the live site.
+const devDeskPage = {
+  name: 'dev-desk-page',
   hooks: {
     'astro:server:setup': ({ server }) => {
-      server.middlewares.use((req, res, next) => {
-        if ((req.url || '').split('?')[0] === '/desk/') {
-          res.statusCode = 302;
-          res.setHeader('Location', '/desk/index.html');
-          return res.end();
+      const file = new URL('./functions-assets/desk.html', import.meta.url).pathname;
+      server.middlewares.use(async (req, res, next) => {
+        const path = (req.url || '').split('?')[0];
+        if (path !== '/desk' && path !== '/desk/') return next();
+        try {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(await readFile(file));
+        } catch {
+          next();
         }
-        next();
       });
     },
   },
@@ -81,7 +91,7 @@ export default defineConfig({
   // places the domain is written down.
   site: 'https://collietiel-adventures.netlify.app',
   output: 'static',
-  integrations: [devDesignEditor, devDeskIndex],
+  integrations: [devDesignEditor, devDeskPage],
   markdown: {
     // Lets reviews write `:collie-smiling:` inline. See the plugin file.
     remarkPlugins: [remarkEmotionIcons],

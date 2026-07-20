@@ -277,8 +277,9 @@ site's — treat it as a design reference, not a spec.
 
 ## The Sunday Table editor (`/desk/`)
 
-`public/desk/index.html` is the newer Claude Design prototype ("The Sunday
-Table — Review Editor") shipped **verbatim** on the live site at `/desk/`.
+`functions-assets/desk.html` is the newer Claude Design prototype ("The
+Sunday Table — Review Editor") shipped **verbatim** on the live site at
+`/desk/`.
 It's a single self-contained bundle — React, the dc-runtime, the app and
 all fonts inlined — served byte-for-byte precisely so it renders exactly
 like the exported file; any processing (Prettier, template extraction,
@@ -296,9 +297,30 @@ Git-backed content is future work (the path is written down in
 blocks.
 
 Writers reach it from the corner launcher in the signed-in CMS at
-`/admin/` (next to "Arrange on canvas"). The page itself is deliberately
-ungated: a client-side gate on a static file is decorative (see the
-comment at the top of `public/admin/index.html`), the desk holds no shared
-state to protect, and real security belongs at the write path — which the
-desk doesn't have yet. Same access model as `/admin/`: reachable by URL,
-`noindex`, useless to a stranger.
+`/admin/` (next to "Arrange on canvas").
+
+**It is behind a real gate**, and that is why the file isn't in `public/`.
+A static file is handed out by the CDN before any of the page's own
+JavaScript exists, so a login screen written inside it is a picture of a
+lock — `curl` walks straight past. Instead `netlify/functions/desk.mjs`
+answers `/desk/`: no valid session, no bytes, just a redirect to sign in.
+
+The flow reuses the OAuth app the CMS already uses. `/api/desk-auth`
+starts it and sets an `oauth_flow=desk` cookie; `callback.mjs` sees that
+cookie and takes its second branch, asking GitHub whether the account has
+push access to the repo (`permissions.push`) before issuing a signed,
+httpOnly session cookie good for 12 hours. Both flows share `/api/callback`
+because a GitHub OAuth app permits only one registered callback URL — that
+is the whole reason for the cookie-based branch rather than a second
+endpoint. The GitHub token is used for those two questions and then
+discarded; only our own signed session is kept. `netlify/lib/session.mjs`
+does the signing, and `test/session.test.mjs` is the regression net for it
+— a forged cookie that verifies is a silent, total failure, so it is tested
+rather than trusted.
+
+Two consequences worth knowing. `DESK_SESSION_SECRET` must be set in
+Netlify or `/desk/` refuses to open (it fails closed on purpose). And under
+`npm run dev` there are no functions and no sign-in, so a dev-only hook in
+`astro.config.mjs` serves the page straight from `functions-assets/` —
+`astro:server:setup` never runs during a build, so that shortcut cannot
+reach the live site.

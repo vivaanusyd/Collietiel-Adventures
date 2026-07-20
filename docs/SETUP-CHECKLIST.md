@@ -64,11 +64,34 @@ Netlify in the next step and nowhere else.
    read at build time, so a redeploy is required — the editor will keep
    failing until you do this.
 
-### 1.4 Check it works
+### 1.4 Add the editor's lock key
+
+The Sunday Table editor at `/desk/` is served only to people who have signed
+in, and the server proves a sign-in is genuine by signing it with a secret.
+Without this variable that page refuses to open at all — deliberately, since
+the alternative is a lock that opens when it can't find its own key.
+
+1. Make a long random value. In Terminal: `openssl rand -base64 32`
+2. Same place as above — **Site configuration → Environment variables → Add
+   a variable**:
+
+   | Key | Value |
+   |---|---|
+   | `DESK_SESSION_SECRET` | the random value from step 1 |
+
+3. Never commit it, and never reuse it anywhere else. Changing it later is
+   harmless: it just signs everyone out.
+4. **Deploys → Trigger deploy → Deploy site** again.
+
+### 1.5 Check it works
 
 1. Go to <https://collietiel-adventures.netlify.app/admin/>.
 2. Click **Sign in with GitHub**. A popup asks you to authorise the app.
 3. You should land in the editor with a **Reviews** collection.
+4. Click **☀ The Sunday Table** in the bottom-right corner. GitHub may ask
+   you to authorise once more — this is a separate sign-in, because the desk
+   is a locked page rather than a panel inside the CMS — and then the
+   Writer's desk opens.
 
 If sign-in fails, see [Troubleshooting](#troubleshooting) at the bottom.
 
