@@ -136,30 +136,6 @@ collections:
         required: true
         hint: Whole stars only, 1 to 5. No half stars — the site can't draw them.
 
-      - name: reaction
-        label: Verdict badge
-        widget: select
-        required: true
-        # NOTE: these are text options showing "Animal — meaning", not the
-        # picture-picker this deserves. Sveltia has no image-select widget
-        # and its custom-widget API (registerFieldType) is documented but
-        # not yet implemented — it's on the 1.0 milestone. When it lands,
-        # this becomes a grid of the actual PNGs from public/icons/.
-        # Until then the labels at least never show a writer a raw key
-        # like `fox`. See NOTES-FOR-VIVAAN.md.
-        options:
-          - { label: '🐷  Pig — go hungry', value: pig }
-          - { label: '🐻  Bear — huge portions', value: bear }
-          - { label: '🐝  Bee — sweet tooth territory', value: bee }
-          - { label: '🦀  Crab — seafood done right', value: crab }
-          - { label: '🦉  Owl — open late', value: owl }
-          - { label: '🐱  Cat — cosy, lingerable', value: cat }
-          - { label: '🦊  Fox — clever cooking', value: fox }
-          - { label: '🐌  Snail — take your time', value: snail }
-        hint: >-
-          One per review — the at-a-glance summary on the card. Different
-          from the emotion icons you drop into the writing.
-
       - name: blurb
         label: Blurb
         widget: string
@@ -196,8 +172,9 @@ collections:
         required: false
         collapsed: false
         # NOTE: x/y are number inputs, not click-to-place on the image.
-        # Click-to-place needs a custom widget (see `reaction` above for
-        # why that isn't possible yet). Percentages from the top-left are
+        # Click-to-place needs Sveltia's custom-widget API, which is
+        # documented but not implemented (it's on their 1.0 milestone).
+        # Percentages from the top-left are
         # the least-bad manual stand-in; the preview pane shows where the
         # dot lands, so it's adjust-and-look rather than pure guesswork.
         hint: >-

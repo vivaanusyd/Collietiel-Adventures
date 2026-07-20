@@ -377,6 +377,57 @@ Design source too — otherwise you'll rediscover this in three months and
 have no idea why. Everything else about that file is untouched, which is
 what keeps it looking exactly like your design.
 
+### Fifth session — the site can now draw a Sunday Table review
+
+This is the **reading** half of connecting Publish to the real site. The site
+can render a Sunday Table review exactly as it was arranged. Nothing yet
+*writes* one into the repo — that's the next stage.
+
+**What "verbatim" turned out to mean.** The document is saved exactly as the
+desk wrote it and drawn by a renderer that mirrors the desk's own layout,
+rather than being converted into the site's six block types. Converting was
+the alternative, and it straightens everything that doesn't fit: rotations,
+free positions, per-paragraph fonts. You said the site should show what you
+arranged, so nothing is translated.
+
+**The floats needed no JavaScript at all**, which I didn't expect going in.
+The desk stores a floating photo's position as an offset from the paragraph
+it's pinned to, so making it a CSS child of that paragraph reproduces the
+desk's own arithmetic for free. Photos stay beside their words when the text
+reflows, with no script and no jump on load.
+
+**Two of the costs I quoted you were wrong, in your favour.** Search and RSS
+needed no work: both read the frontmatter (name, cuisine, blurb), not the
+body, so a desk review is findable the moment it has frontmatter. The only
+text extraction needed was for the "x min read" estimate.
+
+**Three places the page knowingly won't match the desk**, listed properly in
+`docs/DEVELOPING.md`:
+
+1. **Fonts.** The desk offers eight; this site self-hosts two and promises no
+   third-party requests. A review set in Playfair falls back to Georgia for
+   most readers. Say the word and I'll self-host the other eight — it's the
+   one gap that's purely work, no trade-off.
+2. **Half stars.** The desk keeps 4.5, the schema keeps whole stars on
+   purpose, so a card can show four where the page shows four and a half.
+3. **Phones.** A float is a pixel offset in a 720px page. Below 780px they
+   fall into the text as ordinary images instead. The alternative is a
+   sideways scrollbar and photos cropped off the edge.
+
+**The animal verdict badges are gone**, as you asked — off the cards and off
+the review pages. The field is optional rather than deleted so the four
+existing reviews still validate; nothing reads it.
+
+**One new dev-facing thing:** `vitest.config.mjs`. Rendering a real `.astro`
+component in a test needs Astro's own compiler, and Vitest wouldn't pick the
+config up by name, so `npm test` now passes it explicitly. 90 tests pass.
+
+**What I could not do:** look at it. There's no published desk review to
+render and I won't invent one, so the proof is 10 tests asserting the actual
+markup — that a float lands at its stored offset, inside its anchor, on the
+right layer. That's real verification, but it isn't eyes on a page. The first
+real review is the test that matters.
+
 ### Fourth session — the gate is ON, and /admin/ opens the desk
 
 Two changes, and the second is the one that matters.

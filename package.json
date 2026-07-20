@@ -18,8 +18,8 @@
     "astro": "astro",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:unit": "vitest run",
-    "test": "npm run build && python3 sitetest.py dist && vitest run",
+    "test:unit": "vitest run --config vitest.config.mjs",
+    "test": "npm run build && python3 sitetest.py dist && vitest run --config vitest.config.mjs",
     "optimize:images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {

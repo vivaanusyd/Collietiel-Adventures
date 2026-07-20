@@ -1,6 +1,7 @@
 import { defineCollection, z } from 'astro:content';
 import { REACTION_KEYS } from '../lib/reactions';
 import { blockSchema } from '../lib/blocks';
+import { deskReviewSchema } from '../lib/desk';
 import { publicFileExists } from '../lib/public-files.mjs';
 
 // The contract between the WRITING side and the READING side of this site.
@@ -58,9 +59,16 @@ const reviews = defineCollection({
       // all instead of a made-up one.
       blurb: z.string().max(160).default(''),
 
-      // Which animal sits on the card. Validated against src/lib/reactions.ts,
-      // so `reaction: dog` fails the build and lists the valid options.
-      reaction: z.enum(REACTION_KEYS),
+      // The old verdict badge: one animal per review, drawn on the card and
+      // the review page.
+      //
+      // RETIRED, not deleted. The Sunday Table has its own reaction
+      // stickers, placed in the page where they mean something rather than
+      // stamped in a fixed corner — so the site stopped drawing this one
+      // (see ReviewCard.astro). The field stays optional so the reviews
+      // already carrying it still validate; nothing reads it. Delete it once
+      // no file in src/content/reviews/ mentions it.
+      reaction: z.enum(REACTION_KEYS).optional(),
 
       // --- editorial workflow fields ---
       // draft: true  → visible in `npm run dev`, stripped from `npm run build`.
@@ -105,6 +113,18 @@ const reviews = defineCollection({
       // to write would have broken every existing file and forced anyone
       // comfortable in Markdown through a web UI to change a typo.
       blocks: z.array(blockSchema).optional(),
+
+      // A review arranged in the Sunday Table (/desk/), stored EXACTLY as
+      // that editor saved it. See src/lib/desk.ts for why it isn't
+      // converted into `blocks` above, and DeskReview.astro for what draws
+      // it.
+      //
+      // Present means this review's page is the arrangement rather than the
+      // standard layout: the document carries its own heading, byline and
+      // rating. The frontmatter above still applies and is still required —
+      // it is what the homepage, the map, search, RSS and structured data
+      // read, none of which can be answered by a page layout.
+      desk: deskReviewSchema.optional(),
     })
     // Cross-field rules. These can't live on an individual field because
     // they depend on `draft` — which is the point: a draft is allowed to be

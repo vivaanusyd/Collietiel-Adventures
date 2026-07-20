@@ -1,0 +1,363 @@
+---
+// Draws a Sunday Table document on the published site.
+//
+// This is the mirror half of the desk: the editor arranges a review, this
+// draws the same thing for readers. Every number it uses comes from
+// desk-render.mjs, transcribed from the editor's own render() — nothing here
+// invents a value, because "close enough" means a writer's arrangement
+// quietly shifts the moment it's published, which is the one thing storing
+// the document verbatim was meant to prevent.
+//
+// The floating photos need no JavaScript and no measuring: see DeskFloat.
+import DeskFloat from './DeskFloat.astro';
+import {
+  DESK_ACCENT,
+  DESK_PAGE_WIDTH,
+  DESK_PAPER_PADDING_X,
+  flowMargins,
+  floatOffsetCorrection,
+  floatsByAnchor,
+  resolveTextStyle,
+  sanitizeDeskHtml,
+} from '../lib/desk-render.mjs';
+// Aliased: the component below is also called DeskFloat.
+import type { DeskFloat as DeskFloatData, DeskReview } from '../lib/desk';
+
+interface Props {
+  review: DeskReview;
+}
+
+const { review } = Astro.props;
+const doc = review.doc;
+const meta = review.meta ?? {};
+
+const styles = doc.styles ?? {};
+const media = doc.media ?? [];
+// desk-render.mjs is plain JS (so the tests can read it without Astro), so
+// its return type is annotated here rather than inferred.
+const floatGroups: Map<string, DeskFloatData[]> = floatsByAnchor(doc.floats ?? []);
+
+const tags = (meta.tags ?? '')
+  .split(',')
+  .map((tag) => tag.trim())
+  .filter(Boolean);
+
+// Assembled here rather than in the template so an absent author or date
+// leaves no stray separator behind.
+const byline = [meta.author, meta.date].filter(Boolean).join('  ·  ');
+const ratingLabel = typeof meta.rating === 'number' ? meta.rating.toFixed(1) : null;
+
+// Half stars are drawn as a partial fill, as the editor draws them — a
+// review rated 4.5 shows four and a half, not five.
+const starFills = [0, 1, 2, 3, 4].map((i) => Math.max(0, Math.min(1, (meta.rating ?? 0) - i)));
+
+const paperStyle = [
+  'position:relative',
+  `max-width:${DESK_PAGE_WIDTH}px`,
+  'margin:26px auto 40px',
+  `padding:46px ${DESK_PAPER_PADDING_X}px 30px`,
+].join(';');
+
+const metaFloats = floatGroups.get('$meta') ?? [];
+---
+
+<div class="desk-paper" style={paperStyle}>
+  {
+    /* The paper's background is its own layer so `behind` floats can sit
+      between it and the words. See DeskFloat's z-index note. */
+  }
+  <div class="desk-paper__bg" aria-hidden="true"></div>
+
+  <header class="desk-meta">
+    {meta.cuisine && <div class="desk-eyebrow">{meta.cuisine}</div>}
+    {meta.title && <h1 class="desk-title">{meta.title}</h1>}
+    {meta.subtitle && <p class="desk-subtitle">{meta.subtitle}</p>}
+
+    {
+      (ratingLabel || meta.location || byline) && (
+        <div class="desk-detail">
+          {typeof meta.rating === 'number' && (
+            <span class="desk-stars" role="img" aria-label={`Rated ${meta.rating} out of 5`}>
+              {starFills.map((fill) => (
+                <span class="desk-star" aria-hidden="true">
+                  <span class="desk-star__empty">★</span>
+                  <span class="desk-star__fill" style={`width:${fill * 100}%`}>
+                    ★
+                  </span>
+                </span>
+              ))}
+            </span>
+          )}
+          {ratingLabel && <span class="desk-rating-number">{ratingLabel}</span>}
+          {meta.location && <span class="desk-location">· {meta.location}</span>}
+          {byline && <span class="desk-byline">· {byline}</span>}
+        </div>
+      )
+    }
+
+    {
+      tags.length > 0 && (
+        <div class="desk-tags">
+          {tags.map((tag) => (
+            <span class="desk-tag">{tag}</span>
+          ))}
+        </div>
+      )
+    }
+
+    <div class="desk-rule"></div>
+
+    {
+      /* Floats pinned to the header rather than to a paragraph. The header
+        has no border, so the offset needs no correction. */
+    }
+    {metaFloats.map((float) => <DeskFloat float={float} media={media} correction={0} />)}
+  </header>
+
+  {
+    doc.flow.map((item) => {
+      const margins = flowMargins(item);
+      const attached = floatGroups.get(String(item.id)) ?? [];
+      const correction = floatOffsetCorrection(item);
+
+      if (item.kind === 'text') {
+        const text = resolveTextStyle(item, styles);
+        const wrapStyle = [
+          'position:relative',
+          `margin:${margins.top}px 0 ${margins.bottom}px`,
+          `margin-left:${item.ml ?? 0}px`,
+          'padding:4px 6px',
+          // Transparent, and present in the editor too — it is load-bearing
+          // geometry, not decoration: remove it and every float against a
+          // paragraph moves 1.5px.
+          'border:1.5px solid transparent',
+          item.w ? `width:${item.w}px` : 'width:auto',
+          'max-width:100%',
+        ].join(';');
+
+        const textStyle = [
+          `font-family:${text.fontFamily}`,
+          `font-size:${text.fontSize}px`,
+          `line-height:${text.lineHeight}`,
+          `color:${text.color}`,
+          `font-weight:${text.bold ? 700 : 400}`,
+          `font-style:${text.italic ? 'italic' : 'normal'}`,
+          `text-align:${text.align}`,
+          // The editor keeps typed line breaks literally, so the published
+          // page has to as well or paragraphs silently run together.
+          'white-space:pre-wrap',
+          'word-break:break-word',
+          item.type === 'quote' ? `border-left:3px solid ${DESK_ACCENT};padding-left:16px` : '',
+        ]
+          .filter(Boolean)
+          .join(';');
+
+        return (
+          <div class="desk-flow" style={wrapStyle}>
+            <div style={textStyle} set:html={sanitizeDeskHtml(item.text)} />
+            {attached.map((float) => (
+              <DeskFloat float={float} media={media} correction={correction} />
+            ))}
+          </div>
+        );
+      }
+
+      const source = media[item.media];
+      const radius = item.bleed ? 0 : (item.radius ?? 14);
+      const bannerStyle = [
+        'position:relative',
+        // A full-bleed banner runs past the paper's padding on both sides,
+        // which is why the width is the paper's padding added back on.
+        item.bleed ? `width:calc(100% + ${DESK_PAPER_PADDING_X * 2}px)` : 'width:100%',
+        item.bleed ? `margin-left:-${DESK_PAPER_PADDING_X}px` : 'margin-left:0',
+        `height:${item.h ?? 240}px`,
+        `border-radius:${radius}px`,
+        'overflow:hidden',
+        'background:#efe3cd',
+      ].join(';');
+
+      return (
+        <div
+          class="desk-flow"
+          style={`position:relative;margin:${margins.top}px 0 ${margins.bottom}px`}
+        >
+          <div style={bannerStyle}>
+            {source?.src && (
+              <img
+                src={source.src}
+                alt={item.alt ?? ''}
+                loading="lazy"
+                style={`width:100%;height:100%;object-fit:${item.fit ?? 'cover'};display:block`}
+              />
+            )}
+          </div>
+          {attached.map((float) => (
+            <DeskFloat float={float} media={media} correction={correction} />
+          ))}
+        </div>
+      );
+    })
+  }
+</div>
+
+<style>
+  .desk-paper {
+    /* The paper stays a light surface in both themes. It is a picture of a
+       page someone arranged, and re-colouring it for dark mode would repaint
+       artwork the writer chose. This is the one part of the site that does
+       not follow the palette in global.css, knowingly. */
+    color-scheme: light;
+  }
+
+  .desk-paper__bg {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background: #fffaf0;
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(140, 110, 70, 0.28);
+  }
+
+  .desk-meta {
+    position: relative;
+  }
+
+  .desk-eyebrow {
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #b0763c;
+    margin-bottom: 8px;
+  }
+
+  .desk-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.12;
+    color: #4a3a28;
+    margin: 0 0 8px;
+  }
+
+  .desk-subtitle {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-style: italic;
+    font-size: 19px;
+    line-height: 1.4;
+    color: #a8720c;
+    margin: 0 0 12px;
+  }
+
+  .desk-detail {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 2px 0 4px;
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-size: 13px;
+  }
+
+  .desk-stars {
+    display: inline-flex;
+    gap: 2px;
+    vertical-align: middle;
+  }
+
+  .desk-star {
+    position: relative;
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    line-height: 15px;
+    font-size: 15px;
+  }
+
+  .desk-star__empty {
+    position: absolute;
+    inset: 0;
+    color: #e0d3b6;
+  }
+
+  .desk-star__fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    color: #e8a13c;
+    overflow: hidden;
+  }
+
+  .desk-rating-number {
+    font-weight: 800;
+    color: #a8720c;
+  }
+
+  .desk-location {
+    font-weight: 700;
+    color: #8a6d34;
+  }
+
+  .desk-byline {
+    font-weight: 700;
+    color: #9a7d44;
+    margin-left: 2px;
+  }
+
+  .desk-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 2px;
+  }
+
+  .desk-tag {
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #7a5c1f;
+    background: #f2e6c8;
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
+
+  .desk-rule {
+    height: 1.5px;
+    background: #eaddc4;
+    margin: 22px 0 26px;
+  }
+
+  .desk-flow {
+    position: relative;
+  }
+
+  /* THE ONE PLACE THIS DELIBERATELY DOES NOT MATCH THE DESK.
+     A float sits at a pixel offset from its anchor, which is exactly what a
+     narrow screen cannot honour: a photo 196px into the left margin of a
+     720px page is simply off-screen on a phone. Below the paper's width the
+     floats stop being positioned and fall into the text as ordinary images,
+     in anchor order. The alternative is a horizontal scrollbar and a review
+     with its photos cropped away. Shapes are decoration and are dropped
+     rather than stacked into the reading order. */
+  @media (max-width: 780px) {
+    .desk-paper :global(.desk-float) {
+      position: static;
+      transform: none;
+      width: 100%;
+      height: auto;
+      margin: 14px 0;
+      z-index: auto;
+    }
+
+    .desk-paper :global(.desk-float) img {
+      height: auto;
+    }
+
+    .desk-paper :global(.desk-float--shape) {
+      display: none;
+    }
+  }
+</style>

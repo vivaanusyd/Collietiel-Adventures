@@ -8,7 +8,6 @@ import {
   IMAGE_LAYOUTS,
   TEXT_SIZES,
 } from '../src/lib/block-options.mjs';
-import { REACTIONS } from '../src/lib/reactions.ts';
 
 // public/admin/config.yml and src/content/config.ts are one contract, kept
 // in two files because one is read by the editor and the other by the build.
@@ -88,9 +87,12 @@ describe('CMS config mirrors the content schema', () => {
     expect(optionValuesFor('Width')).toEqual([...IMAGE_LAYOUTS]);
   });
 
-  it('offers exactly the verdict badges reactions.ts defines', () => {
-    const inConfig = optionValuesFor('Verdict badge');
-    expect(inConfig.sort()).toEqual(Object.keys(REACTIONS).sort());
+  // The verdict badge used to be asserted here. The field is retired — the
+  // Sunday Table places reaction stickers in the page instead — so the check
+  // is now the opposite one: that it hasn't crept back into the editor while
+  // the site has stopped drawing it.
+  it('no longer asks writers for a verdict badge the site does not draw', () => {
+    expect(CONFIG).not.toMatch(/name:\s*reaction/);
   });
 });
 
@@ -137,12 +139,5 @@ describe('CMS config safety rails', () => {
     expect(rating).toMatch(/value_type:\s*int/);
     expect(rating).toMatch(/min:\s*1/);
     expect(rating).toMatch(/max:\s*5/);
-  });
-
-  it('never shows a writer a raw reaction key as a label', () => {
-    // `label: fox` would be a regression to the thing this replaced.
-    for (const key of Object.keys(REACTIONS)) {
-      expect(CONFIG).not.toMatch(new RegExp(`label:\\s*${key}\\s*,`));
-    }
   });
 });

@@ -226,6 +226,27 @@ Independent of all this:
 
 ### Wiring the Sunday Table (`/desk/`) to real publishing
 
+**Status: the reading half is done.** The site can render a Sunday Table
+review — stored verbatim in a `desk:` field, drawn by `DeskReview.astro`. See
+"Publishing a Sunday Table review" in DEVELOPING.md. What remains is the
+writing half:
+
+1. A publish dialog in the desk collecting what the site needs and the desk
+   doesn't have: coordinates (the CMS's map picker — free, no API key), a
+   cuisine, and a blurb for cards and RSS. The date is stamped on click.
+2. Photos become real files in `public/images/reviews/` instead of the
+   base64 the document carries today.
+3. Publish opens a pull request through the GitHub API, **behind an in-page
+   confirmation step** — not a popup window — so nothing commits on a stray
+   click.
+4. That step is where the writer's GitHub token has to be *kept* rather than
+   spent once and discarded, which is the security decision to make
+   deliberately rather than by accident. Narrowing the OAuth scope from
+   `repo` to `public_repo` is the cheap mitigation while the repo is public.
+
+The original analysis follows.
+
+
 The Sunday Table editor ships verbatim at `/desk/` (launched from the
 signed-in CMS corner), but its Publish button only flips a flag in that
 browser's localStorage — nothing reaches the site. The sanctioned path to

@@ -3,8 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ImageCaption from '../../components/ImageCaption.astro';
 import Blocks from '../../components/Blocks.astro';
 import ReviewSchema from '../../components/ReviewSchema.astro';
-import Icon from '../../components/Icon.astro';
-import { reactionLabel } from '../../lib/reactions';
+import DeskReview from '../../components/DeskReview.astro';
 import ReviewCard from '../../components/ReviewCard.astro';
 import {
   cuisineSlug,
@@ -41,17 +40,16 @@ const {
   coverAlt,
   cuisine,
   address,
-  reaction,
   author,
   draft,
   hotspots,
   blocks,
+  desk,
 } = review.data;
 const { Content } = await review.render();
 
 const stars = starString(rating);
 const minutes = readingTimeMinutes(review);
-const label = reactionLabel(reaction);
 
 // A draft may not have a blurb yet, and an empty string would emit an empty
 // <meta description> rather than falling back. Published reviews always have
@@ -93,6 +91,15 @@ const fmt = (d: Date) =>
   }
 
   {
+    /* A Sunday Table review IS its layout: the document carries its own
+      heading, stars, byline and rule, so the standard chrome below would
+      draw all of that a second time above it. Everything the site needs
+      about this review still comes from the frontmatter — cards, map,
+      search, RSS and the structured data above are untouched. */
+  }
+  {desk && <DeskReview review={desk} />}
+
+  {
     /* Cover is optional — a review without a photo just opens on its
       heading. Hotspots are opt-in on top of that (frontmatter); no
       `hotspots:` key means a plain captioned cover, which is the right
@@ -100,7 +107,7 @@ const fmt = (d: Date) =>
       it used to. */
   }
   {
-    cover && (
+    !desk && cover && (
       <ImageCaption
         src={cover}
         alt={coverAlt ?? name}
@@ -112,21 +119,23 @@ const fmt = (d: Date) =>
     )
   }
 
-  <h1>{name}</h1>
+  {!desk && <h1>{name}</h1>}
 
-  <p class="rating" aria-label={`Rated ${rating} out of 5`}>
-    <span aria-hidden="true">{stars}</span>
-  </p>
-
-  <p class="review-reaction">
-    <Icon name={reaction} size={28} />
-    <span>{label}</span>
-  </p>
+  {
+    !desk && (
+      <p class="rating" aria-label={`Rated ${rating} out of 5`}>
+        <span aria-hidden="true">{stars}</span>
+      </p>
+    )
+  }
 
   {
     /* Cuisine links to its index page. Not done on the card, because the
       whole card is already a link and nesting one inside another is invalid
-      HTML that browsers resolve unpredictably. */
+      HTML that browsers resolve unpredictably.
+
+      Kept for desk reviews too: the arrangement shows a cuisine as plain
+      text, and this is the only route to that cuisine's page. */
   }
   <p class="review-meta">
     {
@@ -140,8 +149,14 @@ const fmt = (d: Date) =>
     <span>{minutes} min read</span>
   </p>
 
+  {
+    /* The desk draws its own byline, but only from the text the writer
+       typed — "Jul 2026", not a machine-readable date. This keeps the
+       <time> element that feed readers and search engines want, and the
+       "Updated" line the desk has no field for. */
+  }
   <p class="review-byline">
-    By {author} · Published <time datetime={date.toISOString()}>{fmt(date)}</time>
+    {!desk && <>By {author} · </>}Published <time datetime={date.toISOString()}>{fmt(date)}</time>
     {
       updated && (
         <>
@@ -156,6 +171,11 @@ const fmt = (d: Date) =>
     /* Markdown body first, then blocks. A review written by hand has only
       the former; one written in the CMS has only the latter; both render
       the same way and a review may use both. See src/lib/blocks.ts. */
+  }
+  {
+    /* A desk review's body is the arrangement above. The Markdown body and
+       `blocks` still render if a file somehow carries both, rather than
+       silently dropping writing that exists. */
   }
   <article class="review-body">
     <Content />
@@ -177,15 +197,6 @@ const fmt = (d: Date) =>
 </BaseLayout>
 
 <style>
-  .review-reaction {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-style: italic;
-    color: var(--color-muted);
-    margin: 0.4rem 0;
-  }
-
   .review-meta,
   .review-byline {
     color: var(--color-muted);

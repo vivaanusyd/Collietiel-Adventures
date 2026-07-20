@@ -1,0 +1,120 @@
+---
+// One floating object from a Sunday Table review: a photo in the margin, or
+// a coloured shape.
+//
+// It renders as an absolutely-positioned child of the flow block it is
+// anchored to. That is the whole trick that makes this work without
+// JavaScript: the editor already stores dx/dy RELATIVE to that block, so the
+// browser reproduces the editor's arithmetic for free, and the float keeps
+// its place when the text above it reflows.
+import { DESK_ACCENT } from '../lib/desk-render.mjs';
+import type { DeskFloat } from '../lib/desk';
+
+interface Props {
+  float: DeskFloat;
+  /** doc.media, which image floats index into. */
+  media: { src: string; label?: string }[];
+  /**
+   * Border width of the anchor, subtracted from the stored offset. The
+   * editor measures the anchor's border box; CSS positions against its
+   * padding box. See floatOffsetCorrection in desk-render.mjs.
+   */
+  correction: number;
+}
+
+const { float, media, correction } = Astro.props;
+
+const behind = float.behind === true;
+const radius = float.radius ?? 12;
+
+const wrapperStyle = [
+  'position:absolute',
+  `left:${float.dx - correction}px`,
+  `top:${float.dy - correction}px`,
+  `width:${float.w}px`,
+  `height:${float.h}px`,
+  `transform:rotate(${float.rot ?? 0}deg)`,
+  // Two layers, matching the editor's: behind the words but above the paper
+  // (which is why the paper paints its background on a -2 layer), or over
+  // everything. Anything between would let a float slide under one
+  // paragraph and over the next.
+  `z-index:${behind ? -1 : 8}`,
+].join(';');
+
+const source = float.kind === 'image' ? media[float.media] : undefined;
+
+const shapeColour = float.kind === 'shape' ? (float.color ?? DESK_ACCENT) : DESK_ACCENT;
+
+// The triangle is an SVG in the editor too: its corners are rounded with a
+// stroke of the same colour, which CSS borders cannot do.
+const triangle =
+  float.kind === 'shape' && float.shape === 'triangle'
+    ? (() => {
+        const w = float.w;
+        const h = float.h || 120;
+        const stroke = Math.max(0, Math.min(radius, Math.min(w, h) / 2.2));
+        const inset = stroke * 0.9;
+        return {
+          viewBox: `0 0 ${w} ${h}`,
+          points: `${w / 2},${inset} ${w - inset},${h - inset} ${inset},${h - inset}`,
+          stroke,
+        };
+      })()
+    : null;
+
+const shapeStyle = (() => {
+  if (float.kind !== 'shape') return '';
+  const base = `width:100%;height:100%;background:${shapeColour}`;
+  if (float.shape === 'circle') return `${base};border-radius:50%`;
+  // A line rounds to its own half-height, so a thin bar reads as a rule.
+  if (float.shape === 'line')
+    return `${base};border-radius:${Math.min(radius, (float.h || 10) / 2)}px`;
+  return `${base};border-radius:${radius}px`;
+})();
+---
+
+<div
+  class:list={['desk-float', float.kind === 'shape' && 'desk-float--shape']}
+  style={wrapperStyle}
+>
+  {
+    float.kind === 'image' && source?.src && (
+      <img
+        src={source.src}
+        alt={float.alt ?? ''}
+        loading="lazy"
+        style={`width:100%;height:100%;object-fit:${float.fit ?? 'cover'};border-radius:${radius}px;display:block;box-shadow:0 6px 18px rgba(140,110,70,.2)`}
+      />
+    )
+  }
+
+  {
+    triangle && (
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={triangle.viewBox}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        style="filter:drop-shadow(0 6px 14px rgba(140,110,70,.18))"
+      >
+        <polygon
+          points={triangle.points}
+          fill={shapeColour}
+          stroke={shapeColour}
+          stroke-width={triangle.stroke}
+          stroke-linejoin="round"
+        />
+      </svg>
+    )
+  }
+
+  {
+    float.kind === 'shape' && float.shape !== 'triangle' && (
+      <div
+        aria-hidden="true"
+        style={`${shapeStyle};filter:drop-shadow(0 6px 14px rgba(140,110,70,.18))`}
+      />
+    )
+  }
+</div>

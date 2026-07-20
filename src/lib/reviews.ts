@@ -1,4 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { deskPlainText } from './desk-render.mjs';
 
 export type Review = CollectionEntry<'reviews'>;
 
@@ -168,13 +169,13 @@ export function reviewCoords(review: Review): { lat: number; lng: number } | nul
  * 200 wpm is the usual published estimate for general-audience prose.
  * Hand-counted rather than pulling in a remark plugin — it's a few lines.
  *
- * Counts the Markdown body AND the `blocks:` list, because a review written
- * in the CMS has an empty body and all of its prose in blocks. Counting only
- * the body would report "1 min read" on every CMS-authored review no matter
- * how long it is.
+ * Counts the Markdown body AND the `blocks:` list AND a `desk:` document,
+ * because a review written in either editor has an empty body and all of its
+ * prose somewhere else. Counting only the body would report "1 min read" on
+ * every review written outside a text editor, no matter how long it is.
  */
 export function readingTimeMinutes(review: Review): number {
-  const parts = [review.body];
+  const parts = [review.body, deskPlainText(review.data.desk?.doc)];
 
   for (const block of review.data.blocks ?? []) {
     // Only prose counts. Captions, alt text and dish prices are label-sized

@@ -23,8 +23,8 @@ build instead of rendering something broken.
 When the two disagree, a writer saves something that fails the build, sees
 an error about zod, and cannot fix it themselves. That's the worst failure
 mode here, so `test/cms-config.test.mjs` asserts they agree on every block
-type, style option and verdict badge. If you change one, change both — the
-test will tell you if you forget.
+type and style option. If you change one, change both — the test will tell
+you if you forget.
 
 ## Commands
 
@@ -50,7 +50,7 @@ request means the same thing as a green run locally.
 | Review queries — **the only place that calls `getCollection`** | `src/lib/reviews.ts` |
 | Block vocabulary + styling options | `src/lib/blocks.ts`, `src/lib/block-options.mjs` |
 | Block renderer | `src/components/Blocks.astro` |
-| Verdict badge list (`reaction:`) | `src/lib/reactions.ts` |
+| Verdict badge list (`reaction:`) — **retired, see below** | `src/lib/reactions.ts` |
 | Inline emotion list (`:collie-smiling:`) | `src/lib/emotions.mjs` |
 | The `:shortcode:` → `<img>` plugin | `src/lib/remark-emotion-icons.mjs` |
 | `public/` file lookups + existence checks | `src/lib/public-files.mjs`, `src/lib/icons.mjs` |
@@ -90,7 +90,7 @@ lat: -33.8908                      # required*  — or these two by hand
 lng: 151.1957                      #             (*exactly one form)
 rating: 4                          # required — whole number 1-5
 date: 2026-02-10                   # required
-reaction: fox                      # required — see src/lib/reactions.ts
+reaction: fox                      # RETIRED — optional, drawn nowhere
 blurb: 'Numbing, tangy, ...'       # required to PUBLISH — 20-160 chars
 cover: '/images/reviews/x.jpg'     # optional — must start with /images/
 coverAlt: 'A bowl of dan dan...'   # optional but write one
@@ -118,27 +118,31 @@ Each is a mistake better hit in the terminal than in production:
 | `cover` starts with `/images/` **and the file exists** | Catches both a relative path and a typo'd filename — `public/` bypasses Vite, so nothing else checks |
 | exactly one of `location` / `lat`+`lng` | A review with neither builds fine and silently never appears on the map |
 | `lat`/`lng` in real ranges | Catches swapped coordinates, which put the pin in the ocean |
-| `reaction` from a fixed list | Guarantees the icon file exists |
 | block `alt` non-empty | It's what a screen reader announces; "optional but please" produces empty strings |
 | `hotspots` require a `cover` | They're percentages of a photo that would otherwise not exist |
 
 ## Two icon systems, deliberately
 
-| | Verdict badge | Inline emotion |
+| | Verdict badge (**retired**) | Inline emotion |
 |---|---|---|
 | Written as | `reaction: fox` in frontmatter | `:collie-smiling:` in the body |
 | How many | Exactly one per review | As many as the prose wants |
-| Shows up | Card, review page | Mid-sentence, inline |
+| Shows up | **Nowhere — no longer drawn** | Mid-sentence, inline |
 | Defined in | `src/lib/reactions.ts` | `src/lib/emotions.mjs` |
 | Bad name | Fails the build | Stays literal + terminal warning |
+
+The verdict badge was one fixed stamp per review, chosen from a list. The
+Sunday Table has its own reaction stickers, placed in the page where they
+mean something, so the site stopped drawing this one — see **Publishing a
+Sunday Table review** at the bottom. Everything below about it describes a
+field nothing reads.
 
 Both read their art from `public/icons/`. Details in
 [public/icons/README.md](../public/icons/README.md).
 
-**To add either:** add the entry to its list file *and* drop a matching PNG
-in `public/icons/`. For a reaction, also add it to the `options:` under
-**Verdict badge** in `public/admin/config.yml`, or writers can't pick it —
-the CMS test will fail until you do.
+**To add an emotion:** add the entry to `emotions.mjs` *and* drop a matching
+PNG in `public/icons/`. (Reactions no longer need this — nothing renders
+them, and the CMS no longer offers the field.)
 
 ## Blocks
 
@@ -335,3 +339,84 @@ signing key, not anybody's password; rotating it just signs everyone out.
 `astro.config.mjs` — Astro's dev server doesn't run Netlify Functions, so
 the gate simply isn't there locally. That hook is `astro:server:setup`
 only, so it cannot run during a build.
+
+## Publishing a Sunday Table review (`desk:`)
+
+A review written in the Sunday Table is stored **verbatim** — the editor's
+own document, in a `desk:` field in the review's frontmatter — and drawn by
+`src/components/DeskReview.astro`. It is not converted into the `blocks:`
+vocabulary above, and that is the central decision here.
+
+**Why not convert.** Blocks describe a review as a stack of known shapes. A
+desk review isn't that: it's an arranged page, with rotated photos in the
+margins, a shape behind a heading, a font chosen per paragraph. Converting
+straightens all of it, which publishes a review that is not the one that was
+written. Storing the document whole means nothing is translated, so nothing
+is lost in translation.
+
+**What it costs.** A second renderer. `src/lib/desk-render.mjs` is a
+transcription of the editor's own layout maths — fonts, default text styles,
+per-kind margins, the float offset correction — and everything visual reads
+from it. That's the same trade `layout.mjs` makes for the canvas editor, with
+the same defence: one file holds the numbers, and `test/desk-render.test.mjs`
+pins them. **When the desk is re-exported from Claude Design, this is the file
+to check against it.**
+
+**How the floating photos work with no JavaScript.** The editor positions a
+float by measuring where its anchor block landed and adding the stored
+`dx`/`dy`. That measurement can't happen at build time — but it doesn't need
+to, because the offset is already *relative to the anchor*. Rendering the
+float as an absolutely-positioned child of that block reproduces the same
+coordinates by construction: text reflows, the anchor moves, the float moves
+with it. No measuring, no layout shift, works with JavaScript off.
+
+Two details in that trick are load-bearing and look like noise:
+
+- Text wrappers carry a **1.5px transparent border** in the editor. The
+  editor stores offsets against the border box; CSS positions absolute
+  children from the padding box. Hence `floatOffsetCorrection` — drop it and
+  every float against a paragraph moves 1.5px.
+- The paper paints its background on **its own `z-index: -2` layer** so that
+  floats sent *behind* the words can sit at `-1`, between the background and
+  the text. Put the background on the paper itself and "behind" floats
+  vanish underneath it.
+
+### Frontmatter is not duplication of the document
+
+The document is what the page *draws*. The frontmatter beside it is what the
+*site* reads — cards, map, search, RSS, structured data — none of which can be
+answered by a page layout. They meet only at publish time, where the desk's
+values are copied out into frontmatter, one direction, so there's never a
+question about which is right.
+
+### Three places the page knowingly differs from the desk
+
+Worth knowing before someone reports them as bugs:
+
+1. **Fonts.** The desk offers eight families; this site self-hosts only
+   Fraunces and Inter and promises no third-party requests. A review set in
+   Playfair renders in the fallback (Georgia) for most readers. Fixing it
+   means self-hosting eight more families.
+2. **Half stars.** The desk keeps `4.5`; the schema keeps whole stars on
+   purpose. The arrangement shows four and a half, the card shows four.
+   Fixing it is a decision about the star scale, not a bug in either file.
+3. **Narrow screens.** A float is a pixel offset inside a 720px page, which a
+   phone cannot honour — below 780px floats fall into the text as ordinary
+   images in anchor order, and decorative shapes are dropped. The alternative
+   is a horizontal scrollbar and photos cropped off the side.
+
+### The verdict badge is retired
+
+`reaction:` — one animal per review, stamped on the card — is no longer drawn
+anywhere. The Sunday Table has its own reaction stickers, which the writer
+places in the page where they mean something. The field stays optional in the
+schema so existing reviews still validate, and `src/lib/reactions.ts` still
+exists for the icons; nothing reads either. Delete both once no file in
+`src/content/reviews/` mentions it.
+
+### Not yet wired: Publish
+
+The desk's Publish button still only flips a flag in that browser's
+`localStorage`. Everything above is the *reading* half — the site can draw a
+desk review, but nothing yet writes one into the repo. `docs/ROADMAP.md` has
+what the writing half needs.

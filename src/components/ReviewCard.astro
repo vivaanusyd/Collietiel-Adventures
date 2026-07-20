@@ -1,7 +1,5 @@
 ---
 import ImageCaption from './ImageCaption.astro';
-import Icon from './Icon.astro';
-import { reactionLabel } from '../lib/reactions';
 import { starString, type Review } from '../lib/reviews';
 
 interface Props {
@@ -9,9 +7,8 @@ interface Props {
 }
 
 const { review } = Astro.props;
-const { name, rating, cover, coverAlt, blurb, cuisine, reaction, draft } = review.data;
+const { name, rating, cover, coverAlt, blurb, cuisine, draft } = review.data;
 const stars = starString(rating);
-const label = reactionLabel(reaction);
 ---
 
 <a class="review-card" href={`/reviews/${review.slug}`}>
@@ -38,19 +35,17 @@ const label = reactionLabel(reaction);
       )
     }
     {
-      /* The animal badge is decorative here — its meaning is spelled out in
-        text below, so it carries no alt text and isn't announced twice. */
+      /* The animal verdict badge used to sit here. It was one fixed stamp
+        per review, chosen from a list — retired in favour of the Sunday
+        Table's reaction stickers, which the writer places in the page where
+        they mean something. See `reaction` in src/content/config.ts. */
     }
-    <span class="reaction-badge" title={label}>
-      <Icon name={reaction} size={30} />
-    </span>
     {draft && <span class="draft-flag">Draft</span>}
   </div>
   <div class="review-card__body">
     {cuisine && <span class="review-card__cuisine">{cuisine}</span>}
     <h2 class="review-card__name">{name}</h2>
     <p class="review-card__blurb">{blurb}</p>
-    <p class="review-card__reaction">{label}</p>
   </div>
 </a>
 
@@ -104,19 +99,6 @@ const label = reactionLabel(reaction);
     font-size: 1.2rem;
   }
 
-  .reaction-badge {
-    position: absolute;
-    top: 0.6rem;
-    right: 0.6rem;
-    width: 44px;
-    height: 44px;
-    display: grid;
-    place-items: center;
-    background: var(--color-scrim);
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  }
-
   /* Only ever rendered in dev — drafts are stripped from prod builds. */
   .draft-flag {
     position: absolute;
@@ -156,12 +138,5 @@ const label = reactionLabel(reaction);
   .review-card__blurb {
     margin: 0;
     font-size: 0.9rem;
-  }
-
-  .review-card__reaction {
-    margin: 0.5rem 0 0;
-    font-size: 0.8rem;
-    color: var(--color-muted);
-    font-style: italic;
   }
 </style>
