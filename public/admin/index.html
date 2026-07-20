@@ -128,6 +128,7 @@
 
         document.body.append(root);
         buildCanvasLink();
+        buildDeskLink();
       }
 
       /**
@@ -145,6 +146,23 @@
         link.href = '/admin/arrange/';
         link.textContent = '⊞  Arrange on canvas';
         link.title = 'Drag blocks anywhere on the page';
+        document.body.append(link);
+      }
+
+      /**
+       * Launcher for the Sunday Table editor at /desk/.
+       *
+       * Same reasoning as the canvas link: it's a separate page, so a plain
+       * link in the same corner stack is the honest UI for it. Note the desk
+       * saves to the browser's own localStorage and its Publish does not yet
+       * commit anything — the CMS here is still what publishes for real.
+       */
+      function buildDeskLink() {
+        const link = document.createElement('a');
+        link.className = 'canvas-link desk-link';
+        link.href = '/desk/';
+        link.textContent = '☀  The Sunday Table';
+        link.title = 'Open the Sunday Table review editor';
         document.body.append(link);
       }
 
@@ -223,6 +241,11 @@
           Helvetica,
           Arial,
           sans-serif;
+      }
+
+      /* Third slot in the corner stack, above the canvas link. */
+      .desk-link {
+        bottom: 6.2rem;
       }
 
       @media (prefers-color-scheme: dark) {

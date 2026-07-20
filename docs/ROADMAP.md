@@ -224,6 +224,30 @@ Independent of all this:
   once there's traffic
 - Canvas ↔ CMS still joined by a clipboard copy (see NOTES-FOR-VIVAAN.md)
 
+### Wiring the Sunday Table (`/desk/`) to real publishing
+
+The Sunday Table editor ships verbatim at `/desk/` (launched from the
+signed-in CMS corner), but its Publish button only flips a flag in that
+browser's localStorage — nothing reaches the site. The sanctioned path to
+making it real is the model Sveltia already uses, with the pieces this repo
+already has:
+
+1. Sign-in reuses `netlify/functions/auth.mjs` / `callback.mjs` — the
+   browser ends up holding the *writer's* GitHub token, secrets stay in
+   Netlify env.
+2. Publish becomes a commit/PR made through the GitHub API **as that
+   writer** — per-author history and the collaborator-list permission check
+   carry over for free, and drafts/review flow arrive as pull requests,
+   same as CMS submissions.
+3. Only after that works does retiring Sveltia become an option, not
+   before — until then it is the only machinery that publishes.
+
+Two things to hold onto when that project starts: the desk's free-pixel
+document model has no mapping to the review block schema yet (that mapping
+*is* the project), and edge auth from §1, once added in front of `/admin/`,
+should cover `/desk/` in the same rule. Writers stay on GitHub sign-in —
+§1's "Google is for readers" analysis applies unchanged.
+
 ---
 
 ## Recommendation

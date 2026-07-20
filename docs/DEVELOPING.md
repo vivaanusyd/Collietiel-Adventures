@@ -274,3 +274,31 @@ only, via the `dev-design-editor` hook in `astro.config.mjs`; it never
 reaches a build or the live site. It needs the network (its runtime loads
 React from unpkg), and its free-pixel model is the *prototype's*, not the
 site's — treat it as a design reference, not a spec.
+
+## The Sunday Table editor (`/desk/`)
+
+`public/desk/index.html` is the newer Claude Design prototype ("The Sunday
+Table — Review Editor") shipped **verbatim** on the live site at `/desk/`.
+It's a single self-contained bundle — React, the dc-runtime, the app and
+all fonts inlined — served byte-for-byte precisely so it renders exactly
+like the exported file; any processing (Prettier, template extraction,
+wrapping it in a layout) is what breaks its visuals, so the file is never
+edited or formatted (see `.prettierignore`). The only local additions are
+the `<title>` and a `noindex` meta in the wrapper head, which keep
+`sitetest.py` treating it as an application like `/admin/`.
+
+Everything it saves lives in that browser's localStorage
+(`sundayTableReviews_v1`); its Publish button flips a flag in that store
+and does **not** create a real review on the site — wiring it to the
+Git-backed content is future work (the path is written down in
+`ROADMAP.md`, "Wiring the Sunday Table"). The grid canvas editor at
+`/admin/arrange` is unaffected and remains the editor that writes real
+blocks.
+
+Writers reach it from the corner launcher in the signed-in CMS at
+`/admin/` (next to "Arrange on canvas"). The page itself is deliberately
+ungated: a client-side gate on a static file is decorative (see the
+comment at the top of `public/admin/index.html`), the desk holds no shared
+state to protect, and real security belongs at the write path — which the
+desk doesn't have yet. Same access model as `/admin/`: reachable by URL,
+`noindex`, useless to a stranger.
