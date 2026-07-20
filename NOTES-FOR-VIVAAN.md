@@ -408,6 +408,21 @@ Two consequences worth knowing:
   usually waves the second one through, but that's a seam I'd want to close
   if it annoys you.
 
+**"View published site" now opens the real site**, in a new tab, instead of
+the desk's own mock reader view. No domain is hardcoded: the desk is served
+from the same origin as the blog, so the link is just `/` — which keeps the
+site address living in the two places `CLAUDE.md` says it lives, and means
+it follows you to a custom domain for free.
+
+That is the **second** hand-patch to `functions-assets/desk.html`, after the
+Publish fix from last session, and it has the same catch: that file is
+generated output, so re-exporting the prototype from Claude Design wipes
+both. If you re-export, re-apply them — or better, fix them in the Design
+source. Grep the file for `window.open('/'` and `out.publish=` to find them.
+
+The reader view it used to open is still there and still reachable from
+inside a review — only the dashboard button changed.
+
 One thing I could not test: the real sign-in, which needs the secrets that
 only exist in Netlify. The hand-over detects your session by looking for a
 stored user record with a token rather than a fixed key name, because
