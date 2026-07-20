@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠ Read HANDOVER.md first
+
+**This file describes the site as it is today. Netlify, Sveltia CMS and GitHub
+OAuth are all being removed** — the project is moving to a self-hosted VPS with
+Google sign-in, and the Sunday Table editor at `/desk/` becomes the only way in.
+[HANDOVER.md](HANDOVER.md) has the decisions, the reasoning, the plan and the
+traps. Following this file alone will have you maintaining things on their way
+out. Netlify deploys are currently **paused** (free-tier credits exhausted), so
+`main` is ahead of the live site.
+
 ## Project
 
 Collietiel Adventures — an Astro static restaurant review blog with a Git-backed CMS (Sveltia, at `/admin/`) so non-technical writers submit reviews as pull requests. Live at https://collietiel-adventures.netlify.app, deployed by Netlify on push to `main`. No database, no reader accounts, three runtime dependencies (`astro`, `leaflet`, `@astrojs/markdown-remark`) — keep it that way; RSS and the sitemap are hand-rolled endpoints on purpose.
